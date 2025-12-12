@@ -18,8 +18,14 @@ void main() async {
   // Initialize bindings in the main zone
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Load environment variables
-  await dotenv.load(fileName: ".env");
+  // Load environment variables (handle missing file gracefully)
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    debugPrint('Warning: .env file not found, using default configuration');
+    // Initialize dotenv with empty map to prevent NotInitializedError
+    dotenv.testLoad(fileInput: '');
+  }
 
   // Initialize Supabase with real-time enabled
   await Supabase.initialize(

@@ -82,22 +82,8 @@ class _ProviderLoginScreenState extends ConsumerState<ProviderLoginScreen> {
                 child: Column(
                   children: [
                     const SizedBox(height: 60),
-                    // Header Section
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 20,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: const AppLogo(width: 80),
-                    ),
+                    // Header Section - Logo without background
+                    const AppLogo(width: 160),
                     const SizedBox(height: 20),
                     const Text(
                       'PROVIDER LOGIN',

@@ -7,18 +7,17 @@ import 'core/config/supabase_config.dart';
 import 'core/config/provider_router.dart';
 
 void main() async {
-  // Set up global error handlers BEFORE initializing bindings
-  FlutterError.onError = (FlutterErrorDetails details) {
-    FlutterError.presentError(details);
-    debugPrint('Flutter Error: ${details.exception}');
-    debugPrint('Stack trace: ${details.stack}');
-  };
-
-  // Initialize bindings in the main zone
+  // Initialize bindings
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Load environment variables
-  await dotenv.load(fileName: ".env");
+  // Load environment variables (handle missing file gracefully)
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    debugPrint('Warning: .env file not found, using default configuration');
+    // Initialize dotenv with empty map to prevent NotInitializedError
+    dotenv.testLoad(fileInput: '');
+  }
 
   // Initialize Supabase
   await Supabase.initialize(

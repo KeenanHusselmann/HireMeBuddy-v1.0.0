@@ -128,21 +128,8 @@ class _ProviderSignupScreenState extends ConsumerState<ProviderSignupScreen> {
                 child: Column(
                   children: [
                     const SizedBox(height: 50),
-                    // Header
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 15,
-                          ),
-                        ],
-                      ),
-                      child: const AppLogo(width: 60),
-                    ),
+                    // Header - Logo without background
+                    const AppLogo(width: 160),
                     const SizedBox(height: 16),
                     const Text(
                       'JOIN AS PROVIDER',
