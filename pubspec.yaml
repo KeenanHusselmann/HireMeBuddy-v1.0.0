@@ -1,0 +1,91 @@
+name: hiremebuddy_flutter
+description: "HireMeBuddy - Service Marketplace Platform (Flutter)"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI & Icons
+  cupertino_icons: ^1.0.8
+  flutter_svg: ^2.0.10
+  
+  # State Management
+  flutter_riverpod: ^2.6.1
+  
+  # Navigation
+  go_router: ^14.6.2
+  
+  # Backend & Database
+  supabase_flutter: ^2.9.3
+  
+  # HTTP & API
+  dio: ^5.7.0
+  
+  # Local Storage
+  shared_preferences: ^2.3.4
+  
+  # Forms & Validation
+  flutter_form_builder: ^9.4.2
+  
+  # Maps & Location
+  google_maps_flutter: ^2.10.0
+  geolocator: ^13.0.2
+  geocoding: ^3.0.0
+  
+  # Image Handling
+  cached_network_image: ^3.4.1
+  image_picker: ^1.1.2
+  video_player: ^2.9.2
+  
+  # Utilities
+  url_launcher: ^6.3.1
+  uuid: ^4.5.1
+  intl: ^0.19.0
+  
+  # Charts & Graphs
+  fl_chart: ^0.69.0
+  
+  # Notifications
+  flutter_local_notifications: ^18.0.1
+  
+  # UI Components
+  flutter_animate: ^4.5.0
+  shimmer: ^3.0.0
+  
+  # Date & Time
+  timeago: ^3.7.0
+  workmanager: ^0.9.0+3
+  
+  # Environment Variables
+  flutter_dotenv: ^5.2.1
+  
+  # Logging
+  logger: ^2.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  build_runner: ^2.4.14
+  flutter_launcher_icons: ^0.14.1
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/hiremebuddy-logo.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/hiremebuddy-logo.png"
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/images/hiremebuddy-logo.png
+    - .env
