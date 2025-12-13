@@ -14,17 +14,31 @@ final currentUserProvider = StreamProvider<User?>((ref) {
   return authService.authStateChanges.map((state) => state.session?.user);
 });
 
-// User Profile Provider
-// This provider automatically refreshes when the current user changes
-final userProfileProvider = FutureProvider<UserProfile?>((ref) async {
-  // Watch the currentUserProvider to automatically refresh when user changes
+// User Profile Provider - Real-time updates
+// This provider automatically refreshes when the profile changes in the database
+final userProfileProvider = StreamProvider<UserProfile?>((ref) async* {
   final userAsync = ref.watch(currentUserProvider);
   final user = userAsync.value;
   
-  if (user == null) return null;
+  if (user == null) {
+    yield null;
+    return;
+  }
   
-  final authService = ref.watch(authServiceProvider);
-  return await authService.getUserProfile(user.id);
+  final supabase = Supabase.instance.client;
+  
+  // Stream the profile for real-time updates
+  await for (final profiles in supabase
+      .from('profiles')
+      .stream(primaryKey: ['id'])
+      .eq('id', user.id)) {
+    
+    if (profiles.isEmpty) {
+      yield null;
+    } else {
+      yield UserProfile.fromJson(profiles.first);
+    }
+  }
 });
 
 // Auth State Provider (for UI convenience)
@@ -86,7 +100,9 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   Future<bool> signUp({
     required String email,
     required String password,
-    required String fullName,
+    String? fullName,
+    String? firstName,
+    String? lastName,
     String? phoneNumber,
     String role = 'client', // Default role is client
   }) async {
@@ -99,6 +115,8 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
         email: email,
         password: password,
         fullName: fullName,
+        firstName: firstName,
+        lastName: lastName,
         phoneNumber: phoneNumber,
         role: role,
       );

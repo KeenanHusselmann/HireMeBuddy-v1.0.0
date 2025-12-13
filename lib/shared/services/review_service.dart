@@ -16,28 +16,26 @@ class ReviewService {
       final user = _supabase.auth.currentUser;
       if (user == null) throw Exception('User not authenticated');
 
-      // Get client profile ID
-      final profileResponse = await _supabase
-          .from('profiles')
-          .select('id')
-          .eq('user_id', user.id)
-          .single();
-      
-      final clientId = profileResponse['id'] as String;
+      // Get client profile ID (user.id IS the profile id)
+      final clientId = user.id;
 
+      // Upsert review (insert or update if exists based on booking_id unique constraint)
       final response = await _supabase
           .from('reviews')
-          .insert({
-            'booking_id': bookingId,
-            'reviewed_id': providerId,
-            'reviewer_id': clientId,
-            'rating': rating,
-            'comment': comment,
-          })
+          .upsert(
+            {
+              'booking_id': bookingId,
+              'reviewed_id': providerId,
+              'reviewer_id': clientId,
+              'rating': rating,
+              'comment': comment,
+            },
+            onConflict: 'booking_id',
+          )
           .select()
           .single();
 
-      logger.info('ReviewService: Review created successfully');
+      logger.info('ReviewService: Review created/updated successfully');
       return Review.fromJson(response);
     } catch (e) {
       logger.error('ReviewService: Error creating review', e);

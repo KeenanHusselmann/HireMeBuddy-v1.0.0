@@ -53,7 +53,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final response = await Supabase.instance.client
           .from('profiles')
           .select()
-          .eq('user_id', user.id)
+          .eq('id', user.id)
           .single();
 
       setState(() {
@@ -110,7 +110,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             'contact_number': _phoneController.text.trim(),
             'bio': _bioController.text.trim(),
           })
-          .eq('user_id', user.id);
+          .eq('id', user.id);
 
       // Update provider profile if user is a provider
       if (_isProvider && _profile != null) {
@@ -179,11 +179,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           .from('profiles')
           .getPublicUrl(filePath);
 
-      // Update profile with new avatar URL
+      // Update profile with new avatar URL (use 'id' column, not 'user_id')
       await Supabase.instance.client
           .from('profiles')
           .update({'avatar_url': imageUrl})
-          .eq('user_id', user.id);
+          .eq('id', user.id);
 
       // Reload profile
       await _loadProfile();

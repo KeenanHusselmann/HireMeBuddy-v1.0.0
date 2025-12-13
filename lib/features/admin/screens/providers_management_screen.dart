@@ -1,13 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/admin_service.dart';
 import '../models/provider_info.dart';
 import '../providers/admin_settings_provider.dart';
 import 'provider_detail_screen.dart';
+import 'provider_documents_review_screen.dart';
 
-final providersListProvider = FutureProvider<List<ProviderInfo>>((ref) async {
+final providersListProvider = StreamProvider<List<ProviderInfo>>((ref) async* {
   final adminService = AdminService();
-  return await adminService.getAllProviders();
+  // Get initial data
+  yield await adminService.getAllProviders();
+  
+  // Set up real-time subscription to profiles table
+  final supabase = Supabase.instance.client;
+  await for (final _ in supabase
+      .from('profiles')
+      .stream(primaryKey: ['id'])
+      .eq('role', 'provider')) {
+    // Fetch fresh data whenever profiles change
+    yield await adminService.getAllProviders();
+  }
 });
 
 class ProvidersManagementScreen extends ConsumerWidget {
@@ -93,60 +106,117 @@ class ProvidersManagementScreen extends ConsumerWidget {
                 DataCell(Text(provider.email ?? 'N/A')),
                 DataCell(Text('N\$${provider.hourlyRate.toStringAsFixed(2)}/hr')),
                 DataCell(
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: provider.isAvailable
-                          ? Colors.green.withOpacity(0.1)
-                          : Colors.grey.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      provider.isAvailable ? 'Available' : 'Unavailable',
-                      style: TextStyle(
-                        color: provider.isAvailable ? Colors.green : Colors.grey,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: provider.isAvailable
+                            ? Colors.green.withOpacity(0.1)
+                            : Colors.grey.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: provider.isAvailable ? Colors.green : Colors.grey,
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        provider.isAvailable ? 'Available' : 'Unavailable',
+                        style: TextStyle(
+                          color: provider.isAvailable ? Colors.green : Colors.grey,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
                 ),
                 DataCell(
-                  Icon(
-                    provider.isVerified ? Icons.verified : Icons.pending,
-                    color: provider.isVerified ? Colors.blue : Colors.orange,
-                    size: 20,
+                  Center(
+                    child: Icon(
+                      provider.isVerified ? Icons.verified : Icons.pending,
+                      color: provider.isVerified ? Colors.blue : Colors.orange,
+                      size: 24,
+                    ),
                   ),
                 ),
                 DataCell(
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.visibility, size: 20),
-                        onPressed: () async {
-                          final result = await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ProviderDetailScreen(
-                                provider: provider,
-                              ),
+                  SizedBox(
+                    width: 180, // Fixed width for consistent alignment
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        // View Details Button
+                        SizedBox(
+                          width: 40,
+                          height: 40,
+                          child: IconButton(
+                            icon: const Icon(Icons.visibility, size: 20),
+                            padding: EdgeInsets.zero,
+                            tooltip: 'View Details',
+                            onPressed: () async {
+                              final result = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ProviderDetailScreen(
+                                    provider: provider,
+                                  ),
+                                ),
+                              );
+                              if (result == true) {
+                                ref.invalidate(providersListProvider);
+                              }
+                            },
+                          ),
+                        ),
+                        // Document Review Button (always reserve space)
+                        SizedBox(
+                          width: 40,
+                          height: 40,
+                          child: (provider.documentsStatus != null && provider.documentsStatus != 'approved')
+                              ? IconButton(
+                                  icon: Icon(
+                                    Icons.verified_user,
+                                    size: 20,
+                                    color: provider.documentsStatus == 'pending' 
+                                        ? Colors.orange 
+                                        : Colors.red,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                  tooltip: 'Review Documents',
+                                  onPressed: () async {
+                                    final result = await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => ProviderDocumentsReviewScreen(
+                                          providerId: provider.id,
+                                        ),
+                                      ),
+                                    );
+                                    if (result == true) {
+                                      ref.invalidate(providersListProvider);
+                                    }
+                                  },
+                                )
+                              : const SizedBox.shrink(), // Empty space but maintains width
+                        ),
+                        // Toggle Switch
+                        SizedBox(
+                          width: 60,
+                          height: 40,
+                          child: FittedBox(
+                            fit: BoxFit.contain,
+                            child: Switch(
+                              value: provider.isAvailable,
+                              onChanged: (value) async {
+                                final adminService = AdminService();
+                                await adminService.toggleProviderStatus(provider.id, value);
+                                ref.invalidate(providersListProvider);
+                              },
                             ),
-                          );
-                          if (result == true) {
-                            ref.invalidate(providersListProvider);
-                          }
-                        },
-                        tooltip: 'View Details',
-                      ),
-                      Switch(
-                        value: provider.isAvailable,
-                        onChanged: (value) async {
-                          final adminService = AdminService();
-                          await adminService.toggleProviderStatus(provider.id, value);
-                          ref.invalidate(providersListProvider);
-                        },
-                      ),
-                    ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -193,6 +263,30 @@ class ProvidersManagementScreen extends ConsumerWidget {
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (provider.documentsStatus != null && provider.documentsStatus != 'approved')
+                    IconButton(
+                      icon: Icon(
+                        Icons.verified_user,
+                        color: provider.documentsStatus == 'pending' 
+                            ? Colors.orange 
+                            : Colors.red,
+                        size: 20,
+                      ),
+                      onPressed: () async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ProviderDocumentsReviewScreen(
+                              providerId: provider.id,
+                            ),
+                          ),
+                        );
+                        if (result == true) {
+                          ref.invalidate(providersListProvider);
+                        }
+                      },
+                      tooltip: 'Review Documents',
+                    ),
                   if (provider.isVerified)
                     const Icon(Icons.verified, color: Colors.blue, size: 20)
                   else

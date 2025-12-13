@@ -44,13 +44,10 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       // Record payment transaction
       await supabase.from('payments').insert({
         'booking_id': widget.booking.id,
-        'client_id': widget.booking.clientId,
-        'provider_id': widget.booking.providerId,
-        'amount': widget.booking.totalPrice,
-        'service_fee': serviceFee,
-        'total_amount': totalAmount,
-        'payment_status': 'completed',
+        'amount': totalAmount,
+        'currency': 'NAD',
         'payment_method': 'escrow',
+        'status': 'paid',
       });
 
       // Notify provider of payment
@@ -116,8 +113,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: ListView(
             children: [
               // Payment header
               const Icon(
@@ -276,7 +272,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                 ),
               ),
 
-              const Spacer(),
+              const SizedBox(height: 24),
 
               // Pay button
               SizedBox(

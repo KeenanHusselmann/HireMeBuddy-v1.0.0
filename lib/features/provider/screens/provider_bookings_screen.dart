@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../shared/services/booking_service.dart';
 import '../../../shared/models/booking_with_client.dart';
+import '../widgets/job_completion_dialog.dart';
 import 'booking_detail_screen.dart';
 
 final bookingServiceProvider = Provider<BookingService>((ref) {
@@ -516,31 +517,19 @@ class _ProviderBookingsScreenState extends ConsumerState<ProviderBookingsScreen>
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: () async {
-                          final confirm = await showDialog<bool>(
+                          final result = await showDialog<Map<String, String?>>(
                             context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text('Complete Job'),
-                              content: const Text(
-                                'Are you sure you want to mark this job as completed? The client will be notified to make payment.',
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context, false),
-                                  child: const Text('Cancel'),
-                                ),
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context, true),
-                                  child: const Text('Complete'),
-                                ),
-                              ],
-                            ),
+                            builder: (context) => const JobCompletionDialog(),
                           );
 
-                          if (confirm == true) {
+                          if (result != null) {
                             try {
                               await ref.read(bookingServiceProvider).updateBookingStatus(
                                 booking.id,
                                 'completed',
+                                completionNotes: result['completionNotes'],
+                                workCompleted: result['workCompleted'],
+                                issuesEncountered: result['issuesEncountered'],
                               );
                               
                               // Send notification to client

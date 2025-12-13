@@ -223,10 +223,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.info_outline, color: Colors.orange),
+            Icon(Icons.info_outline, color: Colors.orange, size: 24),
             SizedBox(width: 8),
-            Text('Service Not Available'),
+            Flexible(
+              child: Text(
+                'Service Not Available',
+                style: TextStyle(fontSize: 18),
+              ),
+            ),
           ],
         ),
         content: Column(
@@ -235,12 +241,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             Text(
               'Sorry, "$searchQuery" is not yet available on our platform.',
-              style: const TextStyle(fontSize: 16),
+              style: const TextStyle(fontSize: 15),
             ),
             const SizedBox(height: 16),
             const Text(
               'Would you like to suggest this service?',
-              style: TextStyle(fontWeight: FontWeight.w500),
+              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
             ),
           ],
         ),
@@ -254,14 +260,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Navigator.of(context).pop();
               _suggestService(context, searchQuery);
             },
-            icon: const Icon(Icons.lightbulb_outline),
-            label: const Text('Suggest Service'),
+            icon: const Icon(Icons.lightbulb_outline, size: 18),
+            label: const Text('Suggest Service', style: TextStyle(fontSize: 13)),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.teal,
               foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             ),
           ),
         ],
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       ),
     );
   }
@@ -432,6 +440,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         appBar: AppBar(
           backgroundColor: Colors.teal,
           foregroundColor: Colors.white,
+          iconTheme: const IconThemeData(color: Colors.white),
           title: userProfile.when(
             data: (profile) => Text(
               'Welcome, ${profile?.fullName.split(' ').first ?? "User"}!',
@@ -444,93 +453,120 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             error: (_, __) => const Text('Welcome!'),
           ),
           actions: [
-            PopupMenuButton<String>(
+            IconButton(
               icon: const Icon(Icons.more_vert),
-              onSelected: (value) async {
-                switch (value) {
-                  case 'profile':
-                    context.push('/profile');
-                    break;
-                  case 'logout':
-                    await ref.read(authStateProvider.notifier).signOut();
-                    if (context.mounted) {
-                      context.go('/login');
+              color: Colors.white,
+              tooltip: 'Menu',
+              onPressed: () {
+                showMenu(
+                  context: context,
+                  position: RelativeRect.fromLTRB(
+                    MediaQuery.of(context).size.width,
+                    kToolbarHeight,
+                    0,
+                    0,
+                  ),
+                  items: [
+                    const PopupMenuItem(
+                      value: 'profile',
+                      child: Row(
+                        children: [
+                          Icon(Icons.person),
+                          SizedBox(width: 8),
+                          Text('Profile'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'logout',
+                      child: Row(
+                        children: [
+                          Icon(Icons.logout),
+                          SizedBox(width: 8),
+                          Text('Logout'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ).then((value) async {
+                  if (value != null) {
+                    switch (value) {
+                      case 'profile':
+                        context.push('/profile');
+                        break;
+                      case 'logout':
+                        await ref.read(authStateProvider.notifier).signOut();
+                        if (context.mounted) {
+                          context.go('/login');
+                        }
+                        break;
                     }
-                    break;
-                }
+                  }
+                });
               },
-              itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'profile',
-                child: Row(
-                  children: [
-                    Icon(Icons.person),
-                    SizedBox(width: 8),
-                    Text('Profile'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout),
-                    SizedBox(width: 8),
-                    Text('Logout'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-            const SizedBox(height: 20),
-            Center(child: const AppLogo(width: 180)),
-            const SizedBox(height: 16),
-            const Text(
-              'Connecting Namibian Skills with Opportunities',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-              ),
-              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 40),
+          ],
+      ),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.zero,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24.0, 8.0, 24.0, 24.0),
+              child: Column(
+                children: [
+                  Center(child: const AppLogo(width: 180)),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Connecting Namibian Skills with Opportunities',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
             
             // Search Bar
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: SearchBar(
-                leading: const Icon(Icons.search, color: Colors.grey),
-                hintText: 'Search for services...',
-                padding: const MaterialStatePropertyAll<EdgeInsets>(
-                  EdgeInsets.symmetric(horizontal: 16.0),
-                ),
-                onSubmitted: (String searchQuery) {
-                  _performSearch(context, ref, searchQuery);
-                },
-                trailing: <Widget>[
-                  Tooltip(
-                    message: 'Search for services',
-                    child: IconButton(
-                      icon: const Icon(Icons.info_outline),
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Enter a service name and press Enter to search'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
-                      },
+              child: Builder(
+                builder: (context) {
+                  final TextEditingController searchController = TextEditingController();
+                  return TextField(
+                    controller: searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Search for services...',
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.search, color: Colors.teal),
+                        tooltip: 'Search',
+                        onPressed: () {
+                          _performSearch(context, ref, searchController.text);
+                        },
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        borderSide: const BorderSide(color: Colors.grey),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        borderSide: const BorderSide(color: Colors.grey),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        borderSide: const BorderSide(color: Colors.teal, width: 2),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                     ),
-                  ),
-                ],
+                    onSubmitted: (String searchQuery) {
+                      _performSearch(context, ref, searchQuery);
+                    },
+                  );
+                },
               ),
             ),
             
@@ -621,15 +657,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               },
             ),
             
-            const SizedBox(height: 40),
+            const SizedBox(height: 24),
             
-            // Provider Video Feed
+            // Provider Video Feed (full width, no padding)
             const ProviderVideoFeed(),
-            
-            const SizedBox(height: 40),
           ],
         ),
-      ),
       ),
       ),
     );

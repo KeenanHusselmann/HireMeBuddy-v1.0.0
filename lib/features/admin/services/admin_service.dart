@@ -102,24 +102,34 @@ class AdminService {
   // Get all providers with their details
   Future<List<ProviderInfo>> getAllProviders({int limit = 50, int offset = 0}) async {
     try {
+      // Query from profiles table where role is provider, then LEFT JOIN to provider_profiles
+      // Use explicit foreign key name to avoid ambiguity with documents_reviewed_by relationship
       final response = await _supabase
-          .from('provider_profiles')
+          .from('profiles')
           .select('''
             id,
-            bio,
-            is_verified,
-            is_available,
-            hourly_rate,
+            full_name,
+            first_name,
+            last_name,
+            email,
+            phone,
             created_at,
-            profiles!provider_profiles_id_fkey (
-              full_name,
-              email,
-              phone
+            provider_profiles!provider_profiles_id_fkey (
+              bio,
+              is_verified,
+              is_available,
+              hourly_rate,
+              documents_status,
+              id_front_url,
+              id_back_url,
+              headshot_url,
+              service_photos_urls
             )
           ''')
+          .eq('role', 'provider')
           .order('created_at', ascending: false)
           .range(offset, offset + limit - 1);
-
+      
       return (response as List)
           .map((json) => ProviderInfo.fromJson(json))
           .toList();
@@ -131,11 +141,59 @@ class AdminService {
   // Verify a provider
   Future<void> verifyProvider(String providerId, bool isVerified) async {
     try {
-      await _supabase
+      // Debug: Check current auth session
+      final currentUser = _supabase.auth.currentUser;
+      print('🔍 [ADMIN] Current user: ${currentUser?.id}');
+      print('🔍 [ADMIN] Current user email: ${currentUser?.email}');
+      
+      if (currentUser == null) {
+        throw Exception('Not authenticated. Please logout and login again.');
+      }
+      
+      // Check if current user is admin
+      final adminProfile = await _supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', currentUser.id)
+          .maybeSingle();
+      
+      print('🔍 [ADMIN] Admin profile role: ${adminProfile?['role']}');
+      
+      if (adminProfile == null || adminProfile['role'] != 'admin') {
+        throw Exception('Unauthorized. Admin role required.');
+      }
+      
+      // Check if provider_profiles record exists
+      final existing = await _supabase
           .from('provider_profiles')
-          .update({'is_verified': isVerified})
-          .eq('id', providerId);
+          .select('id')
+          .eq('id', providerId)
+          .maybeSingle();
+      
+      if (existing == null) {
+        print('🔧 [ADMIN] Creating provider_profiles record for $providerId');
+        // Create a basic provider_profiles record if it doesn't exist
+        await _supabase
+            .from('provider_profiles')
+            .insert({
+              'id': providerId,
+              'is_verified': isVerified,
+              'is_available': true,
+              'bio': 'Provider profile pending completion',
+              'hourly_rate': 0,
+            });
+      } else {
+        print('🔧 [ADMIN] Updating existing provider_profiles for $providerId');
+        // Update existing record
+        await _supabase
+            .from('provider_profiles')
+            .update({'is_verified': isVerified})
+            .eq('id', providerId);
+      }
+      
+      print('✅ [ADMIN] Provider verification updated successfully');
     } catch (e) {
+      print('❌ [ADMIN] Error verifying provider: $e');
       throw Exception('Failed to verify provider: $e');
     }
   }
@@ -143,10 +201,31 @@ class AdminService {
   // Toggle provider active status
   Future<void> toggleProviderStatus(String providerId, bool isAvailable) async {
     try {
-      await _supabase
+      // Check if provider_profiles record exists
+      final existing = await _supabase
           .from('provider_profiles')
-          .update({'is_available': isAvailable})
-          .eq('id', providerId);
+          .select('id')
+          .eq('id', providerId)
+          .maybeSingle();
+      
+      if (existing == null) {
+        // Create a basic provider_profiles record if it doesn't exist
+        await _supabase
+            .from('provider_profiles')
+            .insert({
+              'id': providerId,
+              'is_available': isAvailable,
+              'is_verified': false,
+              'bio': 'Provider profile pending completion',
+              'hourly_rate': 0,
+            });
+      } else {
+        // Update existing record
+        await _supabase
+            .from('provider_profiles')
+            .update({'is_available': isAvailable})
+            .eq('id', providerId);
+      }
     } catch (e) {
       throw Exception('Failed to update provider status: $e');
     }

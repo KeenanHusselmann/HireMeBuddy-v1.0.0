@@ -14,11 +14,18 @@ class ProviderReviewsScreen extends ConsumerStatefulWidget {
 class _ProviderReviewsScreenState extends ConsumerState<ProviderReviewsScreen> {
   String? _providerId;
   bool _isLoading = true;
+  int _refreshKey = 0;
 
   @override
   void initState() {
     super.initState();
     _loadProviderId();
+  }
+
+  void _refreshReviews() {
+    setState(() {
+      _refreshKey++;
+    });
   }
 
   Future<void> _loadProviderId() async {
@@ -73,8 +80,16 @@ class _ProviderReviewsScreenState extends ConsumerState<ProviderReviewsScreen> {
       appBar: AppBar(
         title: const Text('My Reviews'),
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _refreshReviews,
+            tooltip: 'Refresh reviews',
+          ),
+        ],
       ),
       body: FutureBuilder<Map<String, dynamic>>(
+        key: ValueKey(_refreshKey),
         future: _getReviewsWithStats(_providerId!),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {

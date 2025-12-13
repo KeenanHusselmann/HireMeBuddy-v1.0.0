@@ -40,6 +40,10 @@ class _PortfolioViewerScreenState extends ConsumerState<PortfolioViewerScreen>
         title: Text('${widget.providerName}\'s Portfolio'),
         bottom: TabBar(
           controller: _tabController,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          indicatorColor: Colors.white,
+          indicatorWeight: 3,
           tabs: const [
             Tab(icon: Icon(Icons.photo_library), text: 'Photos'),
             Tab(icon: Icon(Icons.videocam), text: 'Videos'),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/provider_info.dart';
 import '../services/admin_service.dart';
+import 'providers_management_screen.dart';
 
 class ProviderDetailScreen extends ConsumerWidget {
   final ProviderInfo provider;
@@ -189,42 +190,90 @@ class ProviderDetailScreen extends ConsumerWidget {
             _buildSectionTitle('Verification Actions'),
             const SizedBox(height: 16),
 
-            if (!provider.isVerified)
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => _handleVerification(context, ref, true),
-                  icon: const Icon(Icons.check_circle),
-                  label: const Text('Approve & Verify Provider'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    textStyle: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              )
-            else
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () => _handleVerification(context, ref, false),
-                  icon: const Icon(Icons.cancel),
-                  label: const Text('Revoke Verification'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red,
-                    side: const BorderSide(color: Colors.red, width: 2),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    textStyle: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 400),
+                child: !provider.isVerified
+                    ? ElevatedButton.icon(
+                        onPressed: () async {
+                          final adminService = AdminService();
+                          try {
+                            await adminService.verifyProvider(provider.id, true);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Provider verified successfully!'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                              // Invalidate providers list to trigger refresh
+                              ref.invalidate(providersListProvider);
+                              Navigator.pop(context, true);
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                        icon: const Icon(Icons.check_circle),
+                        label: const Text('Approve & Verify Provider'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
+                          textStyle: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      )
+                    : OutlinedButton.icon(
+                        onPressed: () async {
+                          final adminService = AdminService();
+                          try {
+                            await adminService.verifyProvider(provider.id, false);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Provider verification removed'),
+                                  backgroundColor: Colors.orange,
+                                ),
+                              );
+                              // Invalidate providers list to trigger refresh
+                              ref.invalidate(providersListProvider);
+                              Navigator.pop(context, true);
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                        icon: const Icon(Icons.cancel),
+                        label: const Text('Revoke Verification'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red, width: 2),
+                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
+                          textStyle: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
               ),
+            ),
 
             const SizedBox(height: 24),
           ],

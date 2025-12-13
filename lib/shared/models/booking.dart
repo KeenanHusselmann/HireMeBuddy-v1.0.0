@@ -8,6 +8,14 @@ class Booking {
   final double hourlyRate;
   final double totalPrice;
   final String? notes;
+  final String? jobLocation;
+  final String? jobInstructions;
+  final double? clientBudget;
+  final String? secondaryContact;
+  final String? completionNotes;
+  final String? workCompleted;
+  final String? issuesEncountered;
+  final DateTime? completedAt;
   final BookingStatus status;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -22,6 +30,14 @@ class Booking {
     required this.hourlyRate,
     required this.totalPrice,
     this.notes,
+    this.jobLocation,
+    this.jobInstructions,
+    this.clientBudget,
+    this.secondaryContact,
+    this.completionNotes,
+    this.workCompleted,
+    this.issuesEncountered,
+    this.completedAt,
     required this.status,
     required this.createdAt,
     required this.updatedAt,
@@ -38,6 +54,14 @@ class Booking {
       hourlyRate: (json['hourly_rate'] as num).toDouble(),
       totalPrice: (json['total_price'] as num).toDouble(),
       notes: json['notes'] as String?,
+      jobLocation: json['job_location'] as String?,
+      jobInstructions: json['job_instructions'] as String?,
+      clientBudget: json['client_budget'] != null ? (json['client_budget'] as num).toDouble() : null,
+      secondaryContact: json['secondary_contact'] as String?,
+      completionNotes: json['completion_notes'] as String?,
+      workCompleted: json['work_completed'] as String?,
+      issuesEncountered: json['issues_encountered'] as String?,
+      completedAt: json['completed_at'] != null ? DateTime.parse(json['completed_at'] as String) : null,
       status: BookingStatus.fromString(json['status'] as String),
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
@@ -55,6 +79,14 @@ class Booking {
       'hourly_rate': hourlyRate,
       'total_price': totalPrice,
       'notes': notes,
+      'job_location': jobLocation,
+      'job_instructions': jobInstructions,
+      'client_budget': clientBudget,
+      'secondary_contact': secondaryContact,
+      'completion_notes': completionNotes,
+      'work_completed': workCompleted,
+      'issues_encountered': issuesEncountered,
+      'completed_at': completedAt?.toIso8601String(),
       'status': status.value,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),

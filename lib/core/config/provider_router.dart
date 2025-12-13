@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/auth_provider.dart';
 import '../../features/provider/screens/provider_splash_screen.dart';
 import '../../features/provider/screens/provider_login_screen.dart';
@@ -38,7 +39,7 @@ class ProviderAppRouter {
       initialLocation: '/provider-splash',
       debugLogDiagnostics: false, // Disable debug logs to reduce noise
       refreshListenable: GoRouterRefreshStream(ref.watch(currentUserProvider.stream)),
-      redirect: (context, state) {
+      redirect: (context, state) async {
         final authState = ref.read(authStateProvider);
         final isAuthenticated = authState.status == AuthStatus.authenticated;
         final isAuthRoute = state.matchedLocation == '/provider-login' || 
@@ -49,6 +50,29 @@ class ProviderAppRouter {
 
         // Skip redirect on splash screen
         if (isSplash) return null;
+
+        // CRITICAL: Validate user role for PROVIDER app
+        if (isAuthenticated) {
+          try {
+            final session = Supabase.instance.client.auth.currentSession;
+            if (session != null) {
+              final profile = await Supabase.instance.client
+                  .from('profiles')
+                  .select('role')
+                  .eq('id', session.user.id)
+                  .maybeSingle();
+              
+              // If user is NOT a provider, sign them out and redirect to login
+              if (profile != null && profile['role'] != 'provider') {
+                debugPrint('⚠️ User has role=${profile['role']}, signing out from PROVIDER app');
+                await Supabase.instance.client.auth.signOut();
+                return '/provider-login';
+              }
+            }
+          } catch (e) {
+            debugPrint('⚠️ Error checking user role: $e');
+          }
+        }
 
         // Allow authenticated users to access registration page
         if (isAuthenticated && isRegistration) return null;

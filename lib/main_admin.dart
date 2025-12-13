@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/config/supabase_config.dart';
 import 'features/admin/screens/admin_login_screen.dart';
 import 'features/admin/screens/admin_dashboard_screen.dart';
@@ -11,6 +12,14 @@ import 'features/admin/screens/admin_dashboard_screen.dart';
 void main() async {
   // Initialize bindings first
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (e) {
+    debugPrint('⚠️ .env file not found, using empty configuration');
+    dotenv.testLoad(fileInput: '');
+  }
 
   // Set up global error handlers
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -50,12 +59,45 @@ class _AdminAppState extends State<AdminApp> {
   }
 
   Future<void> _checkLoginStatus() async {
+    // Check if there's an active Supabase session
+    final session = Supabase.instance.client.auth.currentSession;
+    
+    if (session != null) {
+      // Verify user is an admin
+      try {
+        final profile = await Supabase.instance.client
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .maybeSingle();
+        
+        // CRITICAL: If user is NOT an admin, sign them out
+        if (profile != null && profile['role'] == 'admin') {
+          if (mounted) {
+            setState(() {
+              _initialLocation = '/admin-dashboard';
+            });
+          }
+          return;
+        } else {
+          // User has wrong role, sign them out
+          debugPrint('⚠️ User has role=${profile?['role']}, signing out from ADMIN app');
+          await Supabase.instance.client.auth.signOut();
+        }
+      } catch (e) {
+        debugPrint('Error checking admin profile: $e');
+        await Supabase.instance.client.auth.signOut();
+      }
+    }
+    
+    // No valid session, clear preferences and go to login
     final prefs = await SharedPreferences.getInstance();
-    final isLoggedIn = prefs.getBool('admin_logged_in') ?? false;
+    await prefs.remove('admin_logged_in');
+    await prefs.remove('admin_email');
     
     if (mounted) {
       setState(() {
-        _initialLocation = isLoggedIn ? '/admin-dashboard' : '/admin-login';
+        _initialLocation = '/admin-login';
       });
     }
   }

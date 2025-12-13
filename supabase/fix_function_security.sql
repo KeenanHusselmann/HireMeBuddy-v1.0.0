@@ -48,7 +48,7 @@ CREATE OR REPLACE FUNCTION update_provider_total_jobs()
 RETURNS TRIGGER AS $$
 BEGIN
   UPDATE provider_profiles
-  SET completed_jobs_count = (
+  SET total_jobs = (
     SELECT COUNT(*)
     FROM bookings
     WHERE provider_id = NEW.provider_id

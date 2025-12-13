@@ -9,17 +9,21 @@ class ProviderService {
   // Create or update provider profile
   Future<ProviderProfile> createProviderProfile({
     required String userId,
+    required String firstName,
+    required String lastName,
     required String bio,
     required List<String> skills,
     required double hourlyRate,
   }) async {
     try {
       logger.debug('ProviderService: Creating provider profile for user: $userId');
+      logger.debug('ProviderService: First name: $firstName');
+      logger.debug('ProviderService: Last name: $lastName');
       logger.debug('ProviderService: Bio: $bio');
       logger.debug('ProviderService: Skills: $skills');
       logger.debug('ProviderService: Hourly rate: $hourlyRate');
       
-      // First, ensure the profile exists in the profiles table and update role to provider
+      // First, ensure the profile exists in the profiles table and update name fields
       logger.debug('ProviderService: Checking if profile exists in profiles table...');
       final profileCheck = await _supabase
           .from('profiles')
@@ -32,19 +36,18 @@ class ProviderService {
         throw Exception('User profile not found. Please ensure you are logged in.');
       }
       
-      // Update role to provider if it's not already
-      if (profileCheck['role'] != 'provider') {
-        logger.debug('ProviderService: Updating user role to provider...');
-        await _supabase.from('profiles').update({
-          'role': 'provider',
-          'updated_at': DateTime.now().toIso8601String(),
-        }).eq('id', userId);
-        logger.debug('ProviderService: User role updated to provider');
-      } else {
-        logger.debug('ProviderService: Profile already has provider role');
-      }
+      // Update role to provider and update name fields
+      logger.debug('ProviderService: Updating user role to provider and name fields...');
+      await _supabase.from('profiles').update({
+        'role': 'provider',
+        'first_name': firstName,
+        'last_name': lastName,
+        'full_name': '$firstName $lastName',
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', userId);
+      logger.debug('ProviderService: User profile updated');
       
-      // Now create the provider profile
+      // Now create the provider profile - pending verification by admin
       final response = await _supabase
           .from('provider_profiles')
           .insert({
@@ -52,11 +55,13 @@ class ProviderService {
             'bio': bio,
             'skills': skills,
             'hourly_rate': hourlyRate,
+            'is_verified': false,  // Pending admin verification
+            'is_available': true,
           })
           .select()
           .single();
 
-      logger.info('ProviderService: Provider profile created successfully: ${response['id']}');
+      logger.info('ProviderService: Provider profile created successfully (pending verification): ${response['id']}');
       return ProviderProfile.fromJson(response);
     } catch (e) {
       logger.error('ProviderService: ERROR creating provider profile', e);

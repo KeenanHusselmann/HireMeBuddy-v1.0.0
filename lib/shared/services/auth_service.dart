@@ -49,18 +49,25 @@ class AuthService {
   Future<AuthResponse> signUp({
     required String email,
     required String password,
-    required String fullName,
+    String? fullName,
+    String? firstName,
+    String? lastName,
     String? phoneNumber,
     String role = 'client', // Default role is client
   }) async {
     print('AuthService: Starting Supabase signup for $email with role: $role');
+    
+    // Determine full name from firstName and lastName if not provided
+    final String nameToUse = fullName ?? '${firstName ?? ''} ${lastName ?? ''}'.trim();
     
     try {
       final response = await _supabase.auth.signUp(
         email: email,
         password: password,
         data: {
-          'full_name': fullName,
+          'full_name': nameToUse,
+          'first_name': firstName,
+          'last_name': lastName,
           'phone_number': phoneNumber,
           'role': role,
         },
@@ -75,7 +82,9 @@ class AuthService {
         print('AuthService: ========================================');
         print('AuthService: CREATING PROFILE IN profiles TABLE');
         print('AuthService: User ID: ${response.user!.id}');
-        print('AuthService: Full Name: $fullName');
+        print('AuthService: Full Name: $nameToUse');
+        print('AuthService: First Name: $firstName');
+        print('AuthService: Last Name: $lastName');
         print('AuthService: Phone: $phoneNumber');
         print('AuthService: Role: $role');
         print('AuthService: ========================================');
@@ -93,7 +102,10 @@ class AuthService {
               final profileData = {
                 'id': response.user!.id,
                 'user_id': response.user!.id,  // Required by database
-                'full_name': fullName,
+                'full_name': nameToUse,
+                'first_name': firstName,
+                'last_name': lastName,
+                'email': email,  // Store email in profiles table
                 'role': role,
               };
               
@@ -111,12 +123,12 @@ class AuthService {
               
               print('AuthService: ✅✅✅ INSERT RESULT: $insertResult');
               print('AuthService: ✅ Profile created/updated successfully');
-              print('AuthService: Profile data - ID: ${response.user!.id}, Name: $fullName, Role: $role');
+              print('AuthService: Profile data - ID: ${response.user!.id}, Name: $nameToUse, Role: $role');
               
               // Verify the profile was created
               final verify = await _supabase
                   .from('profiles')
-                  .select('id, full_name, role')
+                  .select('id, full_name, first_name, last_name, role')
                   .eq('id', response.user!.id)
                   .maybeSingle();
               

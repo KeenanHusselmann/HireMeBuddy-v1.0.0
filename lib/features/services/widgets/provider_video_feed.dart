@@ -3,44 +3,75 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:video_player/video_player.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 import '../../../core/utils/logger.dart';
 
-// Provider for fetching random provider videos
-final randomProviderVideosProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+// Provider for fetching random provider videos with real-time updates
+final randomProviderVideosProvider = StreamProvider.autoDispose<List<Map<String, dynamic>>>((ref) {
   final supabase = Supabase.instance.client;
   
-  try {
-    // Get random videos from portfolio with provider info
-    final response = await supabase
-        .from('portfolio_images')
-        .select('''
-          id,
-          image_url,
-          description,
-          provider_id,
-          provider_profiles!inner(
-            id,
-            hourly_rate,
-            bio,
-            profiles!inner(
-              id,
-              full_name,
-              avatar_url
-            )
-          )
-        ''')
-        .eq('media_type', 'video')
-        .limit(20);
-    
-    // Shuffle the results to show random videos
-    final videos = (response as List).cast<Map<String, dynamic>>();
-    videos.shuffle();
-    
-    return videos.take(10).toList();
-  } catch (e) {
-    logger.error('Error fetching random videos', e);
-    return [];
-  }
+  logger.info('🔴 Setting up real-time stream for video feed (provider_profiles)');
+  
+  // Use the same real-time stream approach as Browse Services
+  return supabase
+      .from('provider_profiles')
+      .stream(primaryKey: ['id'])
+      .asyncMap((providerProfiles) async {
+        logger.info('🟢 Video feed: Stream event received with ${providerProfiles.length} provider profiles');
+        
+        try {
+          // Fetch ALL providers with their profiles
+          final List<Map<String, dynamic>> providerCards = [];
+          
+          for (var providerProfile in providerProfiles) {
+            final providerId = providerProfile['id'] as String;
+            try {
+              // Fetch the user profile
+              final userProfile = await supabase
+                  .from('profiles')
+                  .select()
+                  .eq('id', providerId)
+                  .maybeSingle();
+              
+              if (userProfile == null) continue;
+              
+              // Try to get a video for this provider
+              final videos = await supabase
+                  .from('portfolio_images')
+                  .select('id, image_url, description')
+                  .eq('provider_id', providerId)
+                  .eq('media_type', 'video')
+                  .limit(1);
+              
+              // Only add providers who have videos
+              if (videos.isNotEmpty) {
+                final cardData = {
+                  ...videos.first,
+                  'provider_id': providerId,
+                  'provider_profiles': {
+                    ...providerProfile,
+                    'profiles': userProfile,
+                  },
+                };
+                providerCards.add(cardData);
+              }
+            } catch (e) {
+              logger.error('Error fetching provider $providerId', e);
+            }
+          }
+          
+          // Shuffle for variety
+          providerCards.shuffle();
+          final randomCards = providerCards.take(20).toList();
+          
+          logger.info('📊 Video feed: Returning ${randomCards.length} provider cards to UI');
+          return randomCards;
+        } catch (e) {
+          logger.error('Error fetching random videos', e);
+          return [];
+        }
+      });
 });
 
 class ProviderVideoFeed extends ConsumerWidget {
@@ -59,44 +90,31 @@ class ProviderVideoFeed extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
+            const Padding(
+              padding: EdgeInsets.all(16.0),
               child: Row(
                 children: [
-                  const Icon(Icons.video_library, color: Colors.teal, size: 28),
-                  const SizedBox(width: 12),
-                  const Text(
+                  Icon(Icons.video_library, color: Colors.teal, size: 28),
+                  SizedBox(width: 12),
+                  Text(
                     'Discover Providers',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () {
-                      // Refresh videos
-                      ref.invalidate(randomProviderVideosProvider);
-                    },
-                    child: const Text('Refresh'),
-                  ),
                 ],
               ),
             ),
-            SizedBox(
-              height: 520,
-              child: PageView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: videos.length,
-                itemBuilder: (context, index) {
-                  final video = videos[index];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: VideoCard(video: video),
-                  );
-                },
+            // Build videos as direct children instead of nested scroll
+            ...videos.map((video) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+              child: SizedBox(
+                height: 460,
+                child: VideoCard(video: video),
               ),
-            ),
+            )),
+            const SizedBox(height: 100),
           ],
         );
       },
@@ -134,16 +152,56 @@ class _VideoCardState extends State<VideoCard> {
 
   Future<void> _initializeVideo() async {
     try {
-      _controller = VideoPlayerController.networkUrl(
-        Uri.parse(widget.video['image_url']),
+      // Check if video URL exists and is valid
+      final videoUrl = widget.video['image_url'] as String?;
+      if (videoUrl == null || videoUrl.isEmpty) {
+        throw Exception('Invalid video URL');
+      }
+
+      // Try to get cached video first
+      try {
+        final fileInfo = await DefaultCacheManager().getFileFromCache(videoUrl);
+        
+        if (fileInfo != null && fileInfo.file.existsSync()) {
+          // Use cached file
+          _controller = VideoPlayerController.file(fileInfo.file);
+          logger.debug('📹 Using cached video for: $videoUrl');
+        } else {
+          // Download and cache the video
+          final file = await DefaultCacheManager().getSingleFile(videoUrl);
+          _controller = VideoPlayerController.file(file);
+          logger.debug('📹 Downloaded and cached video: $videoUrl');
+        }
+      } catch (cacheError) {
+        // If caching fails, fall back to network
+        logger.debug('📹 Cache failed, using network: $cacheError');
+        _controller = VideoPlayerController.networkUrl(
+          Uri.parse(videoUrl),
+        );
+      }
+      
+      // Initialize with timeout to prevent hanging
+      await _controller.initialize().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('Video initialization timeout - may not be supported on this platform');
+        },
       );
       
-      await _controller.initialize();
       _controller.setLooping(true);
       
       if (mounted) {
         setState(() {
           _isInitialized = true;
+        });
+        // Video will autoplay when it becomes visible (handled by VisibilityDetector)
+      }
+    } on UnimplementedError {
+      // Video player not implemented on this platform (e.g., Windows desktop)
+      // Silently fall back to avatar display - this is expected behavior
+      if (mounted) {
+        setState(() {
+          _hasError = true;
         });
       }
     } catch (e) {
@@ -179,30 +237,80 @@ class _VideoCardState extends State<VideoCard> {
     final providerName = profile['full_name'] as String? ?? 'Provider';
     final avatarUrl = profile['avatar_url'] as String?;
     final hourlyRate = (providerProfile['hourly_rate'] as num?)?.toDouble() ?? 0.0;
+    final isAvailable = providerProfile['is_available'] ?? false;
     final description = widget.video['description'] as String?;
     final providerId = widget.video['provider_id'] as String;
+    
+    print('🎥 VIDEO CARD: Provider $providerName - Available: $isAvailable');
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Video player
+    return VisibilityDetector(
+      key: Key('video_${widget.video['id']}'),
+      onVisibilityChanged: (visibilityInfo) {
+        final visiblePercentage = visibilityInfo.visibleFraction * 100;
+        
+        // Play video when it's at least 50% visible
+        if (visiblePercentage >= 50) {
+          if (_isInitialized && !_hasError && !_controller.value.isPlaying) {
+            _controller.play();
+            logger.debug('▶️ Playing video for $providerName (${visiblePercentage.toInt()}% visible)');
+          }
+        } else {
+          // Pause video when less than 50% visible
+          if (_isInitialized && !_hasError && _controller.value.isPlaying) {
+            _controller.pause();
+            logger.debug('⏸️ Pausing video for $providerName (${visiblePercentage.toInt()}% visible)');
+          }
+        }
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+            // Video player or fallback
             if (_hasError)
-              const Center(
+              // Show provider avatar as fallback when video fails
+              Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.error_outline, color: Colors.white, size: 48),
-                    SizedBox(height: 8),
+                    CircleAvatar(
+                      radius: 60,
+                      backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
+                          ? NetworkImage(avatarUrl)
+                          : null,
+                      child: avatarUrl == null || avatarUrl.isEmpty
+                          ? Text(
+                              providerName.isNotEmpty ? providerName[0].toUpperCase() : 'P',
+                              style: const TextStyle(fontSize: 40, color: Colors.white),
+                            )
+                          : null,
+                    ),
+                    const SizedBox(height: 16),
                     Text(
-                      'Failed to load video',
-                      style: TextStyle(color: Colors.white),
+                      providerName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        shadows: [
+                          Shadow(
+                            offset: Offset(0, 1),
+                            blurRadius: 3,
+                            color: Colors.black87,
+                          ),
+                          Shadow(
+                            offset: Offset(0, 0),
+                            blurRadius: 8,
+                            color: Colors.black45,
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -212,34 +320,7 @@ class _VideoCardState extends State<VideoCard> {
                 child: CircularProgressIndicator(color: Colors.white),
               )
             else
-              GestureDetector(
-                onTap: _togglePlayPause,
-                child: VideoPlayer(_controller),
-              ),
-
-            // Play/Pause overlay
-            if (_isInitialized && !_hasError)
-              GestureDetector(
-                onTap: _togglePlayPause,
-                child: Center(
-                  child: AnimatedOpacity(
-                    opacity: _controller.value.isPlaying ? 0.0 : 0.7,
-                    duration: const Duration(milliseconds: 200),
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        color: Colors.black54,
-                        shape: BoxShape.circle,
-                      ),
-                      padding: const EdgeInsets.all(16),
-                      child: Icon(
-                        _controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
-                        color: Colors.white,
-                        size: 48,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+              VideoPlayer(_controller),
 
             // Provider info overlay (bottom)
             Positioned(
@@ -290,6 +371,18 @@ class _VideoCardState extends State<VideoCard> {
                                   color: Colors.white,
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
+                                  shadows: [
+                                    Shadow(
+                                      offset: Offset(0, 1),
+                                      blurRadius: 3,
+                                      color: Colors.black87,
+                                    ),
+                                    Shadow(
+                                      offset: Offset(0, 0),
+                                      blurRadius: 8,
+                                      color: Colors.black45,
+                                    ),
+                                  ],
                                 ),
                               ),
                               Text(
@@ -323,6 +416,7 @@ class _VideoCardState extends State<VideoCard> {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: () {
+                          print('📲 Navigating with is_available: $isAvailable');
                           // Navigate to provider detail screen with provider data
                           context.push(
                             '/provider-detail/$providerId',
@@ -331,6 +425,7 @@ class _VideoCardState extends State<VideoCard> {
                               'hourly_rate': hourlyRate,
                               'bio': providerProfile['bio'],
                               'skills': providerProfile['skills'] ?? [],
+                              'is_available': isAvailable,
                               'profiles': profile,
                               'contact_number': profile['contact_number'],
                             },
@@ -352,6 +447,72 @@ class _VideoCardState extends State<VideoCard> {
           ],
         ),
       ),
+      ),
+    );
+  }
+}
+
+class ScrollIndicator extends StatefulWidget {
+  const ScrollIndicator({super.key});
+
+  @override
+  State<ScrollIndicator> createState() => _ScrollIndicatorState();
+}
+
+class _ScrollIndicatorState extends State<ScrollIndicator> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
+    
+    _animation = Tween<double>(begin: 0, end: -10).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(0, _animation.value),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.7),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.arrow_upward, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'Scroll up to view next provider',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

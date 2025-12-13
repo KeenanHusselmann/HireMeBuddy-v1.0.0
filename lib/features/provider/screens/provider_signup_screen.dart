@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/providers/auth_provider.dart';
-import '../../../shared/widgets/app_logo.dart';
 
 class ProviderSignupScreen extends ConsumerStatefulWidget {
   const ProviderSignupScreen({super.key});
@@ -13,7 +12,8 @@ class ProviderSignupScreen extends ConsumerStatefulWidget {
 
 class _ProviderSignupScreenState extends ConsumerState<ProviderSignupScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _fullNameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -24,7 +24,8 @@ class _ProviderSignupScreenState extends ConsumerState<ProviderSignupScreen> {
 
   @override
   void dispose() {
-    _fullNameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
@@ -57,7 +58,8 @@ class _ProviderSignupScreenState extends ConsumerState<ProviderSignupScreen> {
     final success = await ref.read(authStateProvider.notifier).signUp(
       email: _emailController.text.trim(),
       password: _passwordController.text,
-      fullName: _fullNameController.text.trim(),
+      firstName: _firstNameController.text.trim(),
+      lastName: _lastNameController.text.trim(),
       phoneNumber: _phoneController.text.trim().isEmpty
           ? null
           : _phoneController.text.trim(),
@@ -77,15 +79,16 @@ class _ProviderSignupScreenState extends ConsumerState<ProviderSignupScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Account created!', style: TextStyle(fontSize: 13)),
+            content: Text('Account created! Complete your provider profile.', style: TextStyle(fontSize: 13)),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
             margin: EdgeInsets.all(8),
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           ),
         );
-        context.go('/provider-dashboard');
-        print('Provider Signup: Navigation to /provider-dashboard completed');
+        // Go directly to registration to enforce provider_profiles creation
+        context.go('/provider-registration');
+        print('Provider Signup: Navigation to /provider-registration completed');
       }
     } else if (mounted) {
       final errorMessage = ref.read(authStateProvider).errorMessage;
@@ -128,9 +131,6 @@ class _ProviderSignupScreenState extends ConsumerState<ProviderSignupScreen> {
                 child: Column(
                   children: [
                     const SizedBox(height: 50),
-                    // Header - Logo without background
-                    const AppLogo(width: 160),
-                    const SizedBox(height: 16),
                     const Text(
                       'JOIN AS PROVIDER',
                       style: TextStyle(
@@ -169,11 +169,11 @@ class _ProviderSignupScreenState extends ConsumerState<ProviderSignupScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            // Full Name
+                            // First Name
                             TextFormField(
-                              controller: _fullNameController,
+                              controller: _firstNameController,
                               decoration: InputDecoration(
-                                labelText: 'Full Name',
+                                labelText: 'First Name',
                                 prefixIcon: Icon(Icons.person_outline, color: Colors.deepOrange.shade600),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                                 focusedBorder: OutlineInputBorder(
@@ -183,7 +183,26 @@ class _ProviderSignupScreenState extends ConsumerState<ProviderSignupScreen> {
                                 contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
                               ),
                               validator: (value) =>
-                                  value == null || value.isEmpty ? 'Required' : null,
+                                  value == null || value.isEmpty ? 'First name required' : null,
+                              enabled: !isLoading,
+                            ),
+                            const SizedBox(height: 12),
+
+                            // Last Name
+                            TextFormField(
+                              controller: _lastNameController,
+                              decoration: InputDecoration(
+                                labelText: 'Last Name',
+                                prefixIcon: Icon(Icons.person_outline, color: Colors.deepOrange.shade600),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(color: Colors.deepOrange.shade600, width: 2),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                              ),
+                              validator: (value) =>
+                                  value == null || value.isEmpty ? 'Last name required' : null,
                               enabled: !isLoading,
                             ),
                             const SizedBox(height: 12),
@@ -366,18 +385,6 @@ class _ProviderSignupScreenState extends ConsumerState<ProviderSignupScreen> {
                     ),
                     const SizedBox(height: 16),
                   ],
-                ),
-              ),
-            ),
-            SafeArea(
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                color: Colors.black.withOpacity(0.2),
-                child: const Text(
-                  '© 2025 HireMeBuddy Provider',
-                  style: TextStyle(color: Colors.white, fontSize: 10),
-                  textAlign: TextAlign.center,
                 ),
               ),
             ),

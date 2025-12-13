@@ -20,10 +20,18 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
   TimeOfDay? _selectedTime;
   int _selectedHours = 1;
   final _notesController = TextEditingController();
+  final _jobLocationController = TextEditingController();
+  final _jobInstructionsController = TextEditingController();
+  final _budgetController = TextEditingController();
+  final _secondaryContactController = TextEditingController();
 
   @override
   void dispose() {
     _notesController.dispose();
+    _jobLocationController.dispose();
+    _jobInstructionsController.dispose();
+    _budgetController.dispose();
+    _secondaryContactController.dispose();
     super.dispose();
   }
 
@@ -85,11 +93,22 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
   }
 
   bool _canSubmit() {
-    return _selectedDate != null && _selectedTime != null;
+    return _selectedDate != null && 
+           _selectedTime != null &&
+           _jobLocationController.text.trim().isNotEmpty &&
+           _jobInstructionsController.text.trim().isNotEmpty;
   }
 
   Future<void> _submitBooking() async {
-    if (!_canSubmit()) return;
+    if (!_canSubmit()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill in all required fields: Date, Time, Job Location, and Job Instructions'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     try {
       // Show loading
@@ -113,6 +132,10 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
         durationHours: _selectedHours,
         hourlyRate: hourlyRate.toDouble(),
         notes: _notesController.text.isEmpty ? null : _notesController.text,
+        jobLocation: _jobLocationController.text.isEmpty ? null : _jobLocationController.text,
+        jobInstructions: _jobInstructionsController.text.isEmpty ? null : _jobInstructionsController.text,
+        clientBudget: _budgetController.text.isEmpty ? null : double.tryParse(_budgetController.text),
+        secondaryContact: _secondaryContactController.text.isEmpty ? null : _secondaryContactController.text,
       );
 
       if (!mounted) return;
@@ -260,7 +283,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                                     fontSize: 16,
                                     color: _selectedDate == null
                                         ? Colors.grey.shade600
-                                        : Colors.white,
+                                        : Colors.black87,
                                   ),
                                 ),
                               ],
@@ -310,7 +333,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                                     fontSize: 16,
                                     color: _selectedTime == null
                                         ? Colors.grey.shade600
-                                        : Colors.white,
+                                        : Colors.black87,
                                   ),
                                 ),
                               ],
@@ -396,6 +419,144 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
 
                   const SizedBox(height: 24),
 
+                  // Job Location
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Job Location *',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _jobLocationController,
+                          decoration: InputDecoration(
+                            hintText: 'Enter the address where the job will be performed',
+                            prefixIcon: const Icon(Icons.location_on, color: Colors.teal),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Colors.teal, width: 2),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Job Instructions
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Job Instructions *',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _jobInstructionsController,
+                          maxLines: 4,
+                          decoration: InputDecoration(
+                            hintText: 'Describe the work to be done in detail...',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Colors.teal, width: 2),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Client Budget
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Your Budget (Optional)',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _budgetController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            hintText: 'Enter your budget in N\$',
+                            prefixIcon: const Icon(Icons.attach_money, color: Colors.teal),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Colors.teal, width: 2),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Secondary Contact
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Secondary Contact (Optional)',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _secondaryContactController,
+                          keyboardType: TextInputType.phone,
+                          decoration: InputDecoration(
+                            hintText: 'Alternative phone number',
+                            prefixIcon: const Icon(Icons.phone, color: Colors.teal),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Colors.teal, width: 2),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
                   // Notes
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -412,24 +573,17 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                         const SizedBox(height: 12),
                         TextField(
                           controller: _notesController,
-                          maxLines: 4,
+                          maxLines: 3,
                           decoration: InputDecoration(
-                            hintText:
-                                'Any special requirements or details...',
+                            hintText: 'Any other details...',
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                color: Colors.teal,
-                                width: 2,
-                              ),
+                              borderSide: const BorderSide(color: Colors.teal, width: 2),
                             ),
                           ),
-                          onChanged: (value) {
-                            // Notes updated in controller
-                          },
                         ),
                       ],
                     ),

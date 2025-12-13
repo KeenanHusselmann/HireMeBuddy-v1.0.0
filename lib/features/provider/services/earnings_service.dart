@@ -34,8 +34,11 @@ class EarningsService {
   Future<EarningsData> getEarnings(String providerId) async {
     final now = DateTime.now();
     final startOfToday = DateTime(now.year, now.month, now.day);
+    final endOfToday = startOfToday.add(const Duration(days: 1));
     final startOfWeek = startOfToday.subtract(Duration(days: now.weekday - 1));
+    final endOfWeek = startOfWeek.add(const Duration(days: 7));
     final startOfMonth = DateTime(now.year, now.month, 1);
+    final endOfMonth = DateTime(now.year, now.month + 1, 1);
 
     // Fetch all completed bookings for this provider
     final response = await _supabase
@@ -65,20 +68,23 @@ class EarningsService {
 
       totalEarnings += price;
 
-      // Today's earnings
-      if (bookingDate.isAfter(startOfToday.subtract(const Duration(seconds: 1)))) {
+      // Today's earnings - check if booking is on today
+      if (bookingDate.isAfter(startOfToday.subtract(const Duration(seconds: 1))) &&
+          bookingDate.isBefore(endOfToday)) {
         todayEarnings += price;
         todayBookings++;
       }
 
-      // This week's earnings
-      if (bookingDate.isAfter(startOfWeek.subtract(const Duration(seconds: 1)))) {
+      // This week's earnings - check if booking is within this week
+      if (bookingDate.isAfter(startOfWeek.subtract(const Duration(seconds: 1))) &&
+          bookingDate.isBefore(endOfWeek)) {
         weekEarnings += price;
         weekBookings++;
       }
 
-      // This month's earnings
-      if (bookingDate.isAfter(startOfMonth.subtract(const Duration(seconds: 1)))) {
+      // This month's earnings - check if booking is within this month
+      if (bookingDate.isAfter(startOfMonth.subtract(const Duration(seconds: 1))) &&
+          bookingDate.isBefore(endOfMonth)) {
         monthEarnings += price;
         monthBookings++;
       }

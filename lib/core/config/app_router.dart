@@ -97,7 +97,7 @@ class AppRouter {
     return GoRouter(
       initialLocation: '/',
       debugLogDiagnostics: true,
-      redirect: (context, state) {
+      redirect: (context, state) async {
         final isAuthenticated = authState.status == AuthStatus.authenticated;
         final isAuthRoute = state.matchedLocation == '/login' || 
                            state.matchedLocation == '/signup';
@@ -105,6 +105,29 @@ class AppRouter {
 
         // Skip redirect on splash screen
         if (isSplash) return null;
+
+        // CRITICAL: Validate user role for CLIENT app
+        if (isAuthenticated) {
+          try {
+            final session = Supabase.instance.client.auth.currentSession;
+            if (session != null) {
+              final profile = await Supabase.instance.client
+                  .from('profiles')
+                  .select('role')
+                  .eq('id', session.user.id)
+                  .maybeSingle();
+              
+              // If user is NOT a client, sign them out and redirect to login
+              if (profile != null && profile['role'] != 'client') {
+                debugPrint('⚠️ User has role=${profile['role']}, signing out from CLIENT app');
+                await Supabase.instance.client.auth.signOut();
+                return '/login';
+              }
+            }
+          } catch (e) {
+            debugPrint('⚠️ Error checking user role: $e');
+          }
+        }
 
         // Redirect to home if authenticated and trying to access auth pages
         if (isAuthenticated && isAuthRoute) {

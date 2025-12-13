@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/utils/logger.dart';
 import '../models/booking.dart';
 import '../models/booking_with_client.dart';
+import '../models/booking_with_provider.dart';
 
 class BookingService {
   final _supabase = Supabase.instance.client;
@@ -13,6 +14,10 @@ class BookingService {
     required int durationHours,
     required double hourlyRate,
     String? notes,
+    String? jobLocation,
+    String? jobInstructions,
+    double? clientBudget,
+    String? secondaryContact,
   }) async {
     try {
       final user = _supabase.auth.currentUser;
@@ -39,6 +44,10 @@ class BookingService {
         'hourly_rate': hourlyRate,
         'total_price': totalPrice,
         'notes': notes,
+        'job_location': jobLocation,
+        'job_instructions': jobInstructions,
+        'client_budget': clientBudget,
+        'secondary_contact': secondaryContact,
         'status': 'pending',
       }).select().single();
 
@@ -178,6 +187,84 @@ class BookingService {
     }
   }
 
+  Stream<List<BookingWithProvider>> getClientBookingsWithProviderDetails() async* {
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) {
+        yield [];
+        return;
+      }
+
+      // Get the profile ID (user.id is the profile ID)
+      final clientId = user.id;
+
+      logger.info('BookingService: Setting up real-time stream for client bookings: $clientId');
+
+      // Stream bookings and fetch provider details on each update
+      await for (final bookingsData in _supabase
+          .from('bookings')
+          .stream(primaryKey: ['id'])) {
+        
+        // Filter for this client's bookings
+        final clientBookings = bookingsData
+            .where((b) => b['client_id'] == clientId)
+            .toList();
+        
+        if (clientBookings.isEmpty) {
+          logger.info('BookingService: No bookings found for client');
+          yield [];
+          continue;
+        }
+
+        logger.info('BookingService: Fetched ${clientBookings.length} client bookings');
+        
+        // Extract unique provider IDs
+        final providerIds = clientBookings
+            .map((b) => b['provider_id'] as String)
+            .toSet()
+            .toList();
+        
+        // Fetch ALL provider details in a SINGLE query
+        final providerProfiles = providerIds.isEmpty 
+            ? <String, Map<String, dynamic>>{}
+            : await _supabase
+                .from('profiles')
+                .select('id, full_name, phone, avatar_url')
+                .inFilter('id', providerIds)
+                .then((response) => Map.fromEntries(
+                      response.map((profile) => MapEntry(
+                            profile['id'] as String,
+                            profile,
+                          )),
+                    ));
+        
+        logger.info('BookingService: Fetched ${providerProfiles.length} provider profiles in single query');
+        
+        // Build bookings with provider details
+        final bookingsWithProviders = clientBookings.map((bookingJson) {
+          final booking = Booking.fromJson(bookingJson);
+          final providerProfile = providerProfiles[booking.providerId];
+          
+          return BookingWithProvider(
+            booking: booking,
+            providerName: providerProfile?['full_name'] as String? ?? 'Unknown Provider',
+            providerPhone: providerProfile?['phone'] as String?,
+            providerAvatar: providerProfile?['avatar_url'] as String?,
+          );
+        }).toList();
+        
+        // Sort by booking date descending
+        bookingsWithProviders.sort((a, b) => 
+            b.booking.bookingDate.compareTo(a.booking.bookingDate));
+        
+        yield bookingsWithProviders;
+      }
+    } catch (e) {
+      logger.error('BookingService: Error fetching client bookings with provider details', e);
+      yield [];
+    }
+  }
+
   Future<int> getPendingBookingsCount() async {
     try {
       final user = _supabase.auth.currentUser;
@@ -185,14 +272,8 @@ class BookingService {
         throw Exception('User not authenticated');
       }
 
-      // Get the profile ID from profiles table
-      final profileResponse = await _supabase
-          .from('profiles')
-          .select('id')
-          .eq('user_id', user.id)
-          .single();
-
-      final providerId = profileResponse['id'] as String;
+      // user.id is the profile ID
+      final providerId = user.id;
 
       final response = await _supabase
           .from('bookings')
@@ -215,14 +296,8 @@ class BookingService {
         throw Exception('User not authenticated');
       }
 
-      // Get the profile ID from profiles table
-      final profileResponse = await _supabase
-          .from('profiles')
-          .select('id')
-          .eq('user_id', user.id)
-          .single();
-
-      final clientId = profileResponse['id'] as String;
+      // user.id is the profile ID
+      final clientId = user.id;
 
       final response = await _supabase
           .from('bookings')
@@ -238,11 +313,27 @@ class BookingService {
     }
   }
 
-  Future<void> updateBookingStatus(String bookingId, String status) async {
+  Future<void> updateBookingStatus(
+    String bookingId, 
+    String status, {
+    String? completionNotes,
+    String? workCompleted,
+    String? issuesEncountered,
+  }) async {
     try {
-      await _supabase.from('bookings').update({
+      final updateData = {
         'status': status,
-      }).eq('id', bookingId);
+      };
+
+      // Add completion details if completing the job
+      if (status == 'completed') {
+        updateData['completed_at'] = DateTime.now().toIso8601String();
+        if (completionNotes != null) updateData['completion_notes'] = completionNotes;
+        if (workCompleted != null) updateData['work_completed'] = workCompleted;
+        if (issuesEncountered != null) updateData['issues_encountered'] = issuesEncountered;
+      }
+
+      await _supabase.from('bookings').update(updateData).eq('id', bookingId);
 
       logger.info('BookingService: Updated booking $bookingId status to $status');
     } catch (e) {

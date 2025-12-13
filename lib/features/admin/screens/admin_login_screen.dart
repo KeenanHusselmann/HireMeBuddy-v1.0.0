@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AdminLoginScreen extends ConsumerStatefulWidget {
   const AdminLoginScreen({super.key});
@@ -30,26 +31,40 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // TODO: Implement admin authentication
-      // For now, simple check for demo purposes
-      if (_emailController.text == 'admin@hiremebuddy.com' && 
-          _passwordController.text == 'admin123') {
-        // Save login state
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('admin_logged_in', true);
-        await prefs.setString('admin_email', _emailController.text);
-        
-        if (mounted) {
-          context.go('/admin-dashboard');
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Invalid admin credentials'),
-              backgroundColor: Colors.red,
-            ),
-          );
+      // Authenticate with Supabase
+      final response = await Supabase.instance.client.auth.signInWithPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      if (response.user != null) {
+        // Verify user is an admin
+        final profile = await Supabase.instance.client
+            .from('profiles')
+            .select('role')
+            .eq('id', response.user!.id)
+            .maybeSingle();
+
+        if (profile != null && profile['role'] == 'admin') {
+          // Save login state
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('admin_logged_in', true);
+          await prefs.setString('admin_email', _emailController.text);
+
+          if (mounted) {
+            context.go('/admin-dashboard');
+          }
+        } else {
+          // Not an admin, sign out
+          await Supabase.instance.client.auth.signOut();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Access denied. Admin privileges required.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
         }
       }
     } catch (e) {

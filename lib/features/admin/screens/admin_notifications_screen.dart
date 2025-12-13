@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'provider_documents_review_screen.dart';
 
 // Provider for admin notifications stream
 final adminNotificationsProvider = StreamProvider.autoDispose<List<Map<String, dynamic>>>((ref) {
@@ -81,6 +82,7 @@ class AdminNotificationsScreen extends ConsumerWidget {
       case 'service_suggestion':
         return Colors.orange;
       case 'new_provider':
+      case 'documents_pending':
         return Colors.blue;
       case 'new_booking':
         return Colors.green;
@@ -88,6 +90,36 @@ class AdminNotificationsScreen extends ConsumerWidget {
         return Colors.purple;
       default:
         return Colors.grey;
+    }
+  }
+
+  void _handleNotificationTap(BuildContext context, Map<String, dynamic> notification) {
+    final type = notification['type'] as String;
+    final metadata = notification['metadata'] as Map<String, dynamic>?;
+
+    switch (type) {
+      case 'new_provider':
+      case 'documents_pending':
+        // Navigate to provider documents review
+        if (metadata != null && metadata['provider_id'] != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ProviderDocumentsReviewScreen(
+                providerId: metadata['provider_id'] as String,
+              ),
+            ),
+          );
+        }
+        break;
+      case 'service_suggestion':
+        // Could navigate to services management
+        break;
+      case 'new_booking':
+        // Could navigate to bookings management
+        break;
+      default:
+        break;
     }
   }
 
@@ -194,6 +226,8 @@ class AdminNotificationsScreen extends ConsumerWidget {
                       if (!isRead) {
                         _markAsRead(notificationId);
                       }
+                      // Handle notification tap based on type
+                      _handleNotificationTap(context, notification);
                     },
                     borderRadius: BorderRadius.circular(12),
                     child: Padding(

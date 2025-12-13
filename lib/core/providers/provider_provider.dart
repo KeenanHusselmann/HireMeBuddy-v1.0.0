@@ -120,6 +120,8 @@ class ProviderRegistrationNotifier extends StateNotifier<ProviderRegistrationSta
 
   Future<void> registerProvider({
     required String userId,
+    required String firstName,
+    required String lastName,
     required String bio,
     required List<String> skills,
     required double hourlyRate,
@@ -129,6 +131,8 @@ class ProviderRegistrationNotifier extends StateNotifier<ProviderRegistrationSta
     try {
       final profile = await _providerService.createProviderProfile(
         userId: userId,
+        firstName: firstName,
+        lastName: lastName,
         bio: bio,
         skills: skills,
         hourlyRate: hourlyRate,

@@ -301,16 +301,47 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
                       CircleAvatar(
                         radius: 30,
                         backgroundColor: Colors.white,
-                        child: Text(
-                          userProfile.when(
-                            data: (profile) => profile?.fullName?.substring(0, 1).toUpperCase() ?? 'P',
-                            loading: () => 'P',
-                            error: (_, __) => 'P',
+                        backgroundImage: userProfile.when(
+                          data: (profile) {
+                            final avatarUrl = profile?.profileImageUrl;
+                            return avatarUrl != null && avatarUrl.isNotEmpty
+                                ? NetworkImage(avatarUrl) as ImageProvider
+                                : null;
+                          },
+                          loading: () => null,
+                          error: (_, __) => null,
+                        ),
+                        child: userProfile.when(
+                          data: (profile) {
+                            final avatarUrl = profile?.profileImageUrl;
+                            // Only show initial if no avatar
+                            if (avatarUrl == null || avatarUrl.isEmpty) {
+                              return Text(
+                                profile?.fullName?.substring(0, 1).toUpperCase() ?? 'P',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.deepOrange.shade600,
+                                ),
+                              );
+                            }
+                            return null;
+                          },
+                          loading: () => Text(
+                            'P',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.deepOrange.shade600,
+                            ),
                           ),
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.deepOrange.shade600,
+                          error: (_, __) => Text(
+                            'P',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.deepOrange.shade600,
+                            ),
                           ),
                         ),
                       ),
@@ -329,7 +360,7 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
                             const SizedBox(height: 4),
                             Text(
                               userProfile.when(
-                                data: (profile) => profile?.fullName ?? 'Provider',
+                                data: (profile) => profile?.firstName ?? 'Provider',
                                 loading: () => 'Loading...',
                                 error: (_, __) => 'Provider',
                               ),
