@@ -78,6 +78,19 @@ class UserProfile {
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
+
+  // Helper method to get display name
+  String get displayName {
+    if (firstName != null && lastName != null) {
+      return '${firstName!} ${lastName!}'.trim();
+    }
+    return fullName;
+  }
+
+  // Helper method to get first name or full name
+  String get firstNameOrFull {
+    return firstName ?? fullName.split(' ').first;
+  }
 }
 
 enum UserRole {

@@ -218,6 +218,8 @@ class AuthService {
   Future<void> updateUserProfile({
     required String userId,
     String? fullName,
+    String? firstName,
+    String? lastName,
     String? phoneNumber,
     String? profileImageUrl,
   }) async {
@@ -226,8 +228,10 @@ class AuthService {
     };
 
     if (fullName != null) updates['full_name'] = fullName;
-    if (phoneNumber != null) updates['phone_number'] = phoneNumber;
-    if (profileImageUrl != null) updates['profile_image_url'] = profileImageUrl;
+    if (firstName != null) updates['first_name'] = firstName;
+    if (lastName != null) updates['last_name'] = lastName;
+    if (phoneNumber != null) updates['phone'] = phoneNumber;
+    if (profileImageUrl != null) updates['profile_photo_url'] = profileImageUrl;
 
     await _supabase.from('profiles').update(updates).eq('id', userId);
   }

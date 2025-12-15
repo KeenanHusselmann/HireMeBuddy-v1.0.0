@@ -30,8 +30,42 @@ final clientBookingsProvider = StreamProvider.autoDispose<List<BookingWithProvid
   }
 });
 
-class MyBookingsScreen extends ConsumerWidget {
+class MyBookingsScreen extends ConsumerStatefulWidget {
   const MyBookingsScreen({super.key});
+
+  @override
+  ConsumerState<MyBookingsScreen> createState() => _MyBookingsScreenState();
+}
+
+class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 4, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  List<BookingWithProvider> _filterBookings(List<BookingWithProvider> bookings, int tabIndex) {
+    switch (tabIndex) {
+      case 0: // All
+        return bookings;
+      case 1: // Pending
+        return bookings.where((b) => b.booking.status == BookingStatus.pending).toList();
+      case 2: // Confirmed (Accepted)
+        return bookings.where((b) => b.booking.status == BookingStatus.confirmed).toList();
+      case 3: // Completed
+        return bookings.where((b) => b.booking.status == BookingStatus.completed).toList();
+      default:
+        return bookings;
+    }
+  }
 
   Color _getStatusColor(String status) {
     switch (status) {
@@ -64,7 +98,7 @@ class MyBookingsScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final bookingsAsync = ref.watch(clientBookingsProvider);
 
     return Scaffold(
@@ -78,6 +112,19 @@ class MyBookingsScreen extends ConsumerWidget {
             },
           ),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          isScrollable: false,
+          labelColor: Colors.teal,
+          unselectedLabelColor: Colors.grey,
+          indicatorColor: Colors.teal,
+          tabs: const [
+            Tab(text: 'All'),
+            Tab(text: 'Pending'),
+            Tab(text: 'Accepted'),
+            Tab(text: 'Completed'),
+          ],
+        ),
       ),
       body: SafeArea(
         child: bookingsAsync.when(
@@ -100,100 +147,209 @@ class MyBookingsScreen extends ConsumerWidget {
           ),
         ),
         data: (bookings) {
-          if (bookings.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+          return TabBarView(
+            controller: _tabController,
+            children: [
+              // All tab
+              _buildBookingsList(bookings, bookings, isAllTab: true),
+              // Pending tab
+              _buildBookingsList(bookings, _filterBookings(bookings, 1)),
+              // Accepted tab
+              _buildBookingsList(bookings, _filterBookings(bookings, 2)),
+              // Completed tab
+              _buildBookingsList(bookings, _filterBookings(bookings, 3)),
+            ],
+          );
+        },
+      ),
+    ));
+  }
+
+  Widget _buildBookingsList(List<BookingWithProvider> allBookings, List<BookingWithProvider> filteredBookings, {bool isAllTab = false}) {
+    // Show status category cards for "All" tab
+    if (isAllTab) {
+      final pendingCount = allBookings.where((b) => b.booking.status == BookingStatus.pending).length;
+      final confirmedCount = allBookings.where((b) => b.booking.status == BookingStatus.confirmed).length;
+      final completedCount = allBookings.where((b) => b.booking.status == BookingStatus.completed).length;
+      final cancelledCount = allBookings.where((b) => b.booking.status == BookingStatus.cancelled).length;
+
+      return RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(clientBookingsProvider);
+        },
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Booking Categories',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 1.3,
                 children: [
-                  Icon(
-                    Icons.event_busy,
-                    size: 64,
-                    color: Colors.grey.shade400,
+                  _buildStatusCard(
+                    title: 'Pending',
+                    count: pendingCount,
+                    icon: Icons.schedule,
+                    color: Colors.orange,
+                    onTap: () => _tabController.animateTo(1),
+                    showBadge: pendingCount > 0,
                   ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'No bookings yet',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey,
-                    ),
+                  _buildStatusCard(
+                    title: 'Accepted',
+                    count: confirmedCount,
+                    icon: Icons.check_circle,
+                    color: Colors.green,
+                    onTap: () => _tabController.animateTo(2),
+                    showBadge: false,
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Book a service provider to get started',
-                    style: TextStyle(color: Colors.grey),
+                  _buildStatusCard(
+                    title: 'Completed',
+                    count: completedCount,
+                    icon: Icons.done_all,
+                    color: Colors.blue,
+                    onTap: () => _tabController.animateTo(3),
+                    showBadge: false,
+                  ),
+                  _buildStatusCard(
+                    title: 'Cancelled',
+                    count: cancelledCount,
+                    icon: Icons.cancel,
+                    color: Colors.red,
+                    onTap: null,
+                    showBadge: false,
                   ),
                 ],
               ),
-            );
-          }
+            ],
+          ),
+        ),
+      );
+    }
 
-          return RefreshIndicator(
-            onRefresh: () async {
-              ref.invalidate(clientBookingsProvider);
-            },
-            child: ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-              itemCount: bookings.length,
-              itemBuilder: (context, index) {
-                final booking = bookings[index];
-                final statusColor = _getStatusColor(booking.booking.status.value);
-                final statusIcon = _getStatusIcon(booking.booking.status.value);
+    if (filteredBookings.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.event_busy,
+              size: 64,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'No bookings yet',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.grey,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Book a service provider to get started',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ],
+        ),
+      );
+    }
 
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                          // Status Badge
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: statusColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: statusColor),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      statusIcon,
-                                      size: 16,
-                                      color: statusColor,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      booking.booking.status.value.toUpperCase(),
-                                      style: TextStyle(
-                                        color: statusColor,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const Spacer(),
-                              Flexible(
-                                child: Text(
-                                  'N\$${booking.booking.totalPrice.toStringAsFixed(2)}',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.teal.shade700,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(clientBookingsProvider);
+      },
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+        itemCount: filteredBookings.length,
+        itemBuilder: (context, index) {
+          final booking = filteredBookings[index];
+          final statusColor = _getStatusColor(booking.booking.status.value);
+          final statusIcon = _getStatusIcon(booking.booking.status.value);
+
+          // Show detailed card
+          return Card(
+            margin: const EdgeInsets.only(bottom: 16),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Job Number and Status Badge
+                  Row(
+                    children: [
+                      // Job Number
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.teal.shade700,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          booking.booking.jobNumber,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
                           ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: statusColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: statusColor),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              statusIcon,
+                              size: 16,
+                              color: statusColor,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              booking.booking.status.value.toUpperCase(),
+                              style: TextStyle(
+                                color: statusColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Spacer(),
+                      Flexible(
+                        child: Text(
+                          'N\$${booking.booking.totalPrice.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.teal.shade700,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
 
                           const SizedBox(height: 16),
 
@@ -486,17 +642,116 @@ class MyBookingsScreen extends ConsumerWidget {
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: Colors.red,
                                 side: const BorderSide(color: Colors.red),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                );
-              },
+                         ),
+                  ),
+                ],
+              ),
             ),
           );
         },
       ),
-    ));
+    );
+  }
+
+
+  Widget _buildStatusCard({
+    required String title,
+    required int count,
+    required IconData icon,
+    required Color color,
+    required VoidCallback? onTap,
+    required bool showBadge,
+  }) {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                color.withOpacity(0.1),
+                color.withOpacity(0.05),
+              ],
+            ),
+          ),
+          child: Stack(
+            children: [
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 32,
+                      color: color,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '$count ${count == 1 ? 'booking' : 'bookings'}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+              if (showBadge && count > 0)
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.red.withOpacity(0.3),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      '$count',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

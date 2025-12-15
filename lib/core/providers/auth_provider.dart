@@ -31,7 +31,7 @@ final userProfileProvider = StreamProvider<UserProfile?>((ref) async* {
   await for (final profiles in supabase
       .from('profiles')
       .stream(primaryKey: ['id'])
-      .eq('id', user.id)) {
+      .eq('user_id', user.id)) {
     
     if (profiles.isEmpty) {
       yield null;
@@ -141,9 +141,10 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
       }
     } catch (e) {
       print('AuthStateNotifier: Signup error - $e');
+      final errorMessage = _parseAuthError(e);
       state = AuthState(
         status: AuthStatus.unauthenticated,
-        errorMessage: e.toString(),
+        errorMessage: errorMessage,
       );
       return false;
     }
@@ -183,9 +184,10 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
       }
     } catch (e) {
       print('AuthStateNotifier: Sign in error = $e');
+      final errorMessage = _parseAuthError(e);
       state = AuthState(
         status: AuthStatus.unauthenticated,
-        errorMessage: e.toString(),
+        errorMessage: errorMessage,
       );
       return false;
     }
@@ -211,5 +213,34 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   // Clear error
   void clearError() {
     state = state.copyWith(errorMessage: null);
+  }
+
+  // Parse authentication errors into user-friendly messages
+  String _parseAuthError(dynamic error) {
+    final errorString = error.toString().toLowerCase();
+    
+    if (errorString.contains('invalid login credentials') || 
+        errorString.contains('invalid email or password')) {
+      return 'Invalid email or password. Please try again.';
+    } else if (errorString.contains('email not confirmed')) {
+      return 'Please verify your email address before signing in.';
+    } else if (errorString.contains('user already registered')) {
+      return 'An account with this email already exists.';
+    } else if (errorString.contains('invalid email')) {
+      return 'Please enter a valid email address.';
+    } else if (errorString.contains('password') && errorString.contains('short')) {
+      return 'Password must be at least 6 characters long.';
+    } else if (errorString.contains('network')) {
+      return 'Network error. Please check your connection.';
+    } else if (errorString.contains('phone number is required')) {
+      return 'Phone number is required for registration.';
+    } else if (errorString.contains('timeout')) {
+      return 'Request timed out. Please try again.';
+    } else if (errorString.contains('rate limit')) {
+      return 'Too many attempts. Please try again later.';
+    } else {
+      // Generic fallback
+      return 'An error occurred. Please try again.';
+    }
   }
 }

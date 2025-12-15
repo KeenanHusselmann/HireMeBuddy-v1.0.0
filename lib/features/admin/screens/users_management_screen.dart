@@ -90,6 +90,7 @@ class _UsersManagementScreenState extends ConsumerState<UsersManagementScreen> {
               final filteredUsers = users.where((user) {
                 if (_searchQuery.isEmpty) return true;
                 return user.fullName.toLowerCase().contains(_searchQuery) ||
+                       (user.email?.toLowerCase().contains(_searchQuery) ?? false) ||
                     (user.email?.toLowerCase().contains(_searchQuery) ?? false);
               }).toList();
 
@@ -148,7 +149,7 @@ class _UsersManagementScreenState extends ConsumerState<UsersManagementScreen> {
                         radius: 16,
                         backgroundColor: const Color(0xFF5C6BC0).withOpacity(0.1),
                         child: Text(
-                          user.fullName[0].toUpperCase(),
+                          user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : 'U',
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,

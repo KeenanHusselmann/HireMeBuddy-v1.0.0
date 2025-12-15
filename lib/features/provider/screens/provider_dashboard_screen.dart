@@ -317,7 +317,7 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
                             // Only show initial if no avatar
                             if (avatarUrl == null || avatarUrl.isEmpty) {
                               return Text(
-                                profile?.fullName?.substring(0, 1).toUpperCase() ?? 'P',
+                                profile?.displayName.substring(0, 1).toUpperCase() ?? 'P',
                                 style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,

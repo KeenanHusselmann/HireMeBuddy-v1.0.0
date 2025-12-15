@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../../shared/services/portfolio_service.dart';
 import '../../../shared/widgets/video_player_widget.dart';
 
@@ -125,23 +128,64 @@ class _PortfolioViewerScreenState extends ConsumerState<PortfolioViewerScreen>
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: isVideo
-                        ? Container(
-                            color: Colors.black87,
-                            child: const Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.videocam,
-                                  size: 40,
-                                  color: Colors.white70,
+                        ? FutureBuilder<String?>(
+                            future: _generateThumbnail(item['image_url']),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState == ConnectionState.waiting) {
+                                return Container(
+                                  color: Colors.black87,
+                                  child: const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
+                              }
+                              
+                              if (snapshot.hasData && snapshot.data != null) {
+                                return Image.file(
+                                  File(snapshot.data!),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      color: Colors.black87,
+                                      child: const Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.videocam,
+                                            size: 40,
+                                            color: Colors.white70,
+                                          ),
+                                          SizedBox(height: 4),
+                                          Text(
+                                            'Video',
+                                            style: TextStyle(color: Colors.white70, fontSize: 12),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                );
+                              }
+                              
+                              return Container(
+                                color: Colors.black87,
+                                child: const Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.videocam,
+                                      size: 40,
+                                      color: Colors.white70,
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      'Video',
+                                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                                    ),
+                                  ],
                                 ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'Video',
-                                  style: TextStyle(color: Colors.white70, fontSize: 12),
-                                ),
-                              ],
-                            ),
+                              );
+                            },
                           )
                         : Image.network(
                             item['image_url'],
@@ -295,6 +339,22 @@ class _PortfolioViewerScreenState extends ConsumerState<PortfolioViewerScreen>
         );
       },
     );
+  }
+
+  Future<String?> _generateThumbnail(String videoUrl) async {
+    try {
+      final thumbnailPath = await VideoThumbnail.thumbnailFile(
+        video: videoUrl,
+        thumbnailPath: (await getTemporaryDirectory()).path,
+        imageFormat: ImageFormat.JPEG,
+        maxWidth: 300,
+        quality: 75,
+      );
+      return thumbnailPath;
+    } catch (e) {
+      print('Error generating thumbnail: $e');
+      return null;
+    }
   }
 
   void _showFullImage(Map<String, dynamic> item, bool isVideo) {

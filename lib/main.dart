@@ -6,6 +6,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/config/supabase_config.dart';
 import 'core/config/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/providers/theme_provider.dart';
 
 void main() async {
   // Set up global error handlers BEFORE initializing bindings
@@ -56,6 +57,7 @@ class HireMeBuddyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(AppRouter.provider);
+    final themeMode = ref.watch(themeModeProvider);
     
     return MaterialApp.router(
       title: 'HireMeBuddy',
@@ -64,7 +66,7 @@ class HireMeBuddyApp extends ConsumerWidget {
       // Theme configuration
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
 
       // Routing configuration
       routerConfig: router,

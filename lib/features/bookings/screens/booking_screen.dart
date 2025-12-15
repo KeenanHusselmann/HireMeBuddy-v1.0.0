@@ -94,16 +94,35 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
 
   bool _canSubmit() {
     return _selectedDate != null && 
-           _selectedTime != null &&
-           _jobLocationController.text.trim().isNotEmpty &&
-           _jobInstructionsController.text.trim().isNotEmpty;
+           _selectedTime != null;
   }
 
   Future<void> _submitBooking() async {
     if (!_canSubmit()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please fill in all required fields: Date, Time, Job Location, and Job Instructions'),
+          content: Text('Please select date and time'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Validate required fields
+    if (_jobLocationController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter job location'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_jobInstructionsController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter job instructions'),
           backgroundColor: Colors.red,
         ),
       );
@@ -264,14 +283,15 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey.shade300),
+                              color: _selectedDate != null ? Colors.grey.shade800 : null,
+                              border: Border.all(color: _selectedDate != null ? Colors.teal : Colors.grey.shade300),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
                               children: [
                                 Icon(
                                   Icons.calendar_today,
-                                  color: Colors.teal,
+                                  color: _selectedDate != null ? Colors.white : Colors.teal,
                                 ),
                                 const SizedBox(width: 12),
                                 Text(
@@ -283,7 +303,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                                     fontSize: 16,
                                     color: _selectedDate == null
                                         ? Colors.grey.shade600
-                                        : Colors.black87,
+                                        : Colors.white,
                                   ),
                                 ),
                               ],
@@ -315,14 +335,15 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey.shade300),
+                              color: _selectedTime != null ? Colors.grey.shade800 : null,
+                              border: Border.all(color: _selectedTime != null ? Colors.teal : Colors.grey.shade300),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
                               children: [
                                 Icon(
                                   Icons.access_time,
-                                  color: Colors.teal,
+                                  color: _selectedTime != null ? Colors.white : Colors.teal,
                                 ),
                                 const SizedBox(width: 12),
                                 Text(
@@ -333,7 +354,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                                     fontSize: 16,
                                     color: _selectedTime == null
                                         ? Colors.grey.shade600
-                                        : Colors.black87,
+                                        : Colors.white,
                                   ),
                                 ),
                               ],
@@ -433,19 +454,61 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        TextField(
-                          controller: _jobLocationController,
-                          decoration: InputDecoration(
-                            hintText: 'Enter the address where the job will be performed',
-                            prefixIcon: const Icon(Icons.location_on, color: Colors.teal),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: Colors.teal, width: 2),
-                            ),
-                          ),
+                        Autocomplete<String>(
+                          optionsBuilder: (TextEditingValue textEditingValue) {
+                            if (textEditingValue.text.isEmpty) {
+                              return const Iterable<String>.empty();
+                            }
+                            final locations = [
+                              'Windhoek, Namibia',
+                              'Swakopmund, Namibia',
+                              'Walvis Bay, Namibia',
+                              'Oshakati, Namibia',
+                              'Rundu, Namibia',
+                              'Katima Mulilo, Namibia',
+                              'Otjiwarongo, Namibia',
+                              'Grootfontein, Namibia',
+                              'Tsumeb, Namibia',
+                              'Gobabis, Namibia',
+                              'Rehoboth, Namibia',
+                              'Keetmanshoop, Namibia',
+                              'Okahandja, Namibia',
+                              'Mariental, Namibia',
+                              'Lüderitz, Namibia',
+                              'Outapi, Namibia',
+                              'Ondangwa, Namibia',
+                              'Oranjemund, Namibia',
+                            ];
+                            return locations.where((String option) {
+                              return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
+                            });
+                          },
+                          onSelected: (String selection) {
+                            _jobLocationController.text = selection;
+                          },
+                          fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                            controller.text = _jobLocationController.text;
+                            controller.addListener(() {
+                              _jobLocationController.text = controller.text;
+                            });
+                            return TextField(
+                              controller: controller,
+                              focusNode: focusNode,
+                              decoration: InputDecoration(
+                                hintText: 'Enter the address where the job will be performed',
+                                hintStyle: TextStyle(color: Colors.grey.shade400),
+                                prefixIcon: const Icon(Icons.location_on, color: Colors.teal),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(color: Colors.teal, width: 2),
+                                ),
+                              ),
+                              style: const TextStyle(color: Colors.white, fontSize: 16),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -470,8 +533,10 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                         TextField(
                           controller: _jobInstructionsController,
                           maxLines: 4,
+                          style: const TextStyle(color: Colors.white, fontSize: 16),
                           decoration: InputDecoration(
                             hintText: 'Describe the work to be done in detail...',
+                            hintStyle: TextStyle(color: Colors.grey.shade400),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -504,8 +569,10 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                         TextField(
                           controller: _budgetController,
                           keyboardType: TextInputType.number,
+                          style: const TextStyle(color: Colors.white, fontSize: 16),
                           decoration: InputDecoration(
                             hintText: 'Enter your budget in N\$',
+                            hintStyle: TextStyle(color: Colors.grey.shade400),
                             prefixIcon: const Icon(Icons.attach_money, color: Colors.teal),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -539,8 +606,10 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                         TextField(
                           controller: _secondaryContactController,
                           keyboardType: TextInputType.phone,
+                          style: const TextStyle(color: Colors.white, fontSize: 16),
                           decoration: InputDecoration(
                             hintText: 'Alternative phone number',
+                            hintStyle: TextStyle(color: Colors.grey.shade400),
                             prefixIcon: const Icon(Icons.phone, color: Colors.teal),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -574,8 +643,10 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                         TextField(
                           controller: _notesController,
                           maxLines: 3,
+                          style: const TextStyle(color: Colors.white, fontSize: 16),
                           decoration: InputDecoration(
                             hintText: 'Any other details...',
+                            hintStyle: TextStyle(color: Colors.grey.shade400),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),

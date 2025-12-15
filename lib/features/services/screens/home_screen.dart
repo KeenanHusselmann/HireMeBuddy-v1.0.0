@@ -443,7 +443,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           iconTheme: const IconThemeData(color: Colors.white),
           title: userProfile.when(
             data: (profile) => Text(
-              'Welcome, ${profile?.fullName.split(' ').first ?? "User"}!',
+              'Welcome, ${profile?.firstNameOrFull ?? "User"}!',
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,

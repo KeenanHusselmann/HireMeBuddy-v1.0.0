@@ -293,9 +293,26 @@ class _ProviderBookingsScreenState extends ConsumerState<ProviderBookingsScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Status Badge and Price
+                    // Job Number, Status Badge and Price
                     Row(
                       children: [
+                        // Job Number
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.deepOrange.shade600,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            booking.jobNumber,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,

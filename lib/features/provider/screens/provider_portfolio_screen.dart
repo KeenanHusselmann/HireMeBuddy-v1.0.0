@@ -1,6 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../../shared/providers/portfolio_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../shared/widgets/video_player_widget.dart';
@@ -160,23 +163,64 @@ class _ProviderPortfolioScreenState extends ConsumerState<ProviderPortfolioScree
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: isVideo
-                ? Container(
-                    color: Colors.black87,
-                    child: const Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.videocam,
-                          size: 60,
-                          color: Colors.white70,
+                ? FutureBuilder<String?>(
+                    future: _generateThumbnail(image['image_url']),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Container(
+                          color: Colors.black87,
+                          child: const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      }
+                      
+                      if (snapshot.hasData && snapshot.data != null) {
+                        return Image.file(
+                          File(snapshot.data!),
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.black87,
+                              child: const Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.videocam,
+                                    size: 60,
+                                    color: Colors.white70,
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    'Video',
+                                    style: TextStyle(color: Colors.white70),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      }
+                      
+                      return Container(
+                        color: Colors.black87,
+                        child: const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.videocam,
+                              size: 60,
+                              color: Colors.white70,
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Video',
+                              style: TextStyle(color: Colors.white70),
+                            ),
+                          ],
                         ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Video',
-                          style: TextStyle(color: Colors.white70),
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   )
                 : Image.network(
                     image['image_url'],
@@ -215,6 +259,22 @@ class _ProviderPortfolioScreenState extends ConsumerState<ProviderPortfolioScree
         ],
       ),
     );
+  }
+
+  Future<String?> _generateThumbnail(String videoUrl) async {
+    try {
+      final thumbnailPath = await VideoThumbnail.thumbnailFile(
+        video: videoUrl,
+        thumbnailPath: (await getTemporaryDirectory()).path,
+        imageFormat: ImageFormat.JPEG,
+        maxWidth: 300,
+        quality: 75,
+      );
+      return thumbnailPath;
+    } catch (e) {
+      print('Error generating thumbnail: $e');
+      return null;
+    }
   }
 
   Widget _buildTestimonialsTab(String userId) {

@@ -1,5 +1,6 @@
 class Booking {
   final String id;
+  final String jobNumber;
   final String clientId;
   final String providerId;
   final DateTime bookingDate;
@@ -22,6 +23,7 @@ class Booking {
 
   Booking({
     required this.id,
+    required this.jobNumber,
     required this.clientId,
     required this.providerId,
     required this.bookingDate,
@@ -46,6 +48,7 @@ class Booking {
   factory Booking.fromJson(Map<String, dynamic> json) {
     return Booking(
       id: json['id'] as String,
+      jobNumber: json['job_number'] as String? ?? 'JOB-${json['id'].toString().substring(0, 8).toUpperCase()}',
       clientId: json['client_id'] as String,
       providerId: json['provider_id'] as String,
       bookingDate: DateTime.parse(json['booking_date'] as String),
@@ -71,6 +74,7 @@ class Booking {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'job_number': jobNumber,
       'client_id': clientId,
       'provider_id': providerId,
       'booking_date': bookingDate.toIso8601String().split('T')[0],

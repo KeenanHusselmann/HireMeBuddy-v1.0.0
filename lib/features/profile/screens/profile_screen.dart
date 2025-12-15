@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import '../../../core/providers/theme_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -53,7 +54,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final response = await Supabase.instance.client
           .from('profiles')
           .select()
-          .eq('id', user.id)
+          .eq('user_id', user.id)
           .single();
 
       setState(() {
@@ -110,7 +111,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             'contact_number': _phoneController.text.trim(),
             'bio': _bioController.text.trim(),
           })
-          .eq('id', user.id);
+          .eq('user_id', user.id);
 
       // Update provider profile if user is a provider
       if (_isProvider && _profile != null) {
@@ -179,11 +180,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           .from('profiles')
           .getPublicUrl(filePath);
 
-      // Update profile with new avatar URL (use 'id' column, not 'user_id')
+      // Update profile with new avatar URL
       await Supabase.instance.client
           .from('profiles')
           .update({'avatar_url': imageUrl})
-          .eq('id', user.id);
+          .eq('user_id', user.id);
 
       // Reload profile
       await _loadProfile();
@@ -408,6 +409,96 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                     const SizedBox(height: 24),
 
+                    // Theme Preference Section
+                    const Text(
+                      'Preferences',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Card(
+                      elevation: 1,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.brightness_6,
+                                  color: Theme.of(context).primaryColor,
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Theme Mode',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        ref.watch(themeModeProvider) == ThemeMode.dark
+                                            ? 'Dark mode'
+                                            : ref.watch(themeModeProvider) == ThemeMode.light
+                                                ? 'Light mode'
+                                                : 'System default',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Switch(
+                                  value: ref.watch(themeModeProvider) == ThemeMode.dark,
+                                  onChanged: (isDark) {
+                                    ref.read(themeModeProvider.notifier).toggleTheme();
+                                  },
+                                  activeThumbColor: Theme.of(context).primaryColor,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                _buildThemeOption(
+                                  context,
+                                  ref,
+                                  icon: Icons.light_mode,
+                                  label: 'Light',
+                                  mode: ThemeMode.light,
+                                ),
+                                _buildThemeOption(
+                                  context,
+                                  ref,
+                                  icon: Icons.dark_mode,
+                                  label: 'Dark',
+                                  mode: ThemeMode.dark,
+                                ),
+                                _buildThemeOption(
+                                  context,
+                                  ref,
+                                  icon: Icons.brightness_auto,
+                                  label: 'System',
+                                  mode: ThemeMode.system,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
                     // Bio
                     const Text(
                       'Bio',
@@ -549,6 +640,63 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
               ),
             ),
+      ),
+    );
+  }
+
+  Widget _buildThemeOption(
+    BuildContext context,
+    WidgetRef ref, {
+    required IconData icon,
+    required String label,
+    required ThemeMode mode,
+  }) {
+    final currentMode = ref.watch(themeModeProvider);
+    final isSelected = currentMode == mode;
+
+    return Expanded(
+      child: InkWell(
+        onTap: () {
+          ref.read(themeModeProvider.notifier).setThemeMode(mode);
+        },
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? Theme.of(context).primaryColor.withOpacity(0.1)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isSelected
+                  ? Theme.of(context).primaryColor
+                  : Colors.grey.shade300,
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                color: isSelected
+                    ? Theme.of(context).primaryColor
+                    : Colors.grey.shade600,
+                size: 28,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected
+                      ? Theme.of(context).primaryColor
+                      : Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

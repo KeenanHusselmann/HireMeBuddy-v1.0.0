@@ -33,19 +33,39 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       password: _passwordController.text,
     );
 
-    if (success && mounted) {
+    if (!mounted) return;
+
+    if (success) {
       // Invalidate the user profile cache to force refresh with current user's data
       ref.invalidate(userProfileProvider);
       
-      context.go('/home');
-    } else if (mounted) {
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ Welcome back!'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      
+      // Wait a moment for the user to see the message, then navigate
+      await Future.delayed(const Duration(milliseconds: 300));
+      
+      if (mounted) {
+        context.go('/home');
+      }
+    } else {
+      // Show error message
       final errorMessage = ref.read(authStateProvider).errorMessage;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(errorMessage ?? 'Login failed. Please try again.'),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
         ),
       );
+      
+      // Stay on login screen - don't navigate away
     }
   }
 

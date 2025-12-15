@@ -92,12 +92,11 @@ class AppRouter {
   AppRouter._();
 
   static final Provider<GoRouter> provider = Provider<GoRouter>((ref) {
-    final authState = ref.watch(authStateProvider);
-    
     return GoRouter(
       initialLocation: '/',
       debugLogDiagnostics: true,
       redirect: (context, state) async {
+        final authState = ref.read(authStateProvider);
         final isAuthenticated = authState.status == AuthStatus.authenticated;
         final isAuthRoute = state.matchedLocation == '/login' || 
                            state.matchedLocation == '/signup';
@@ -114,7 +113,7 @@ class AppRouter {
               final profile = await Supabase.instance.client
                   .from('profiles')
                   .select('role')
-                  .eq('id', session.user.id)
+                  .eq('user_id', session.user.id)
                   .maybeSingle();
               
               // If user is NOT a client, sign them out and redirect to login

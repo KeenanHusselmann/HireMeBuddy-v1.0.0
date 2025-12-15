@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:ui';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/providers/auth_provider.dart';
@@ -13,7 +14,8 @@ class SignupScreen extends ConsumerStatefulWidget {
 
 class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _fullNameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -23,7 +25,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   @override
   void dispose() {
-    _fullNameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
@@ -34,35 +37,47 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   Future<void> _handleSignup() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // Show glassmorphism loading dialog immediately
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const _GlassmorphismLoadingDialog(),
+    );
+
     final authNotifier = ref.read(authStateProvider.notifier);
     final success = await authNotifier.signUp(
       email: _emailController.text.trim(),
       password: _passwordController.text,
-      fullName: _fullNameController.text.trim(),
-      phoneNumber: _phoneController.text.trim().isEmpty 
-          ? null 
-          : _phoneController.text.trim(),
+      firstName: _firstNameController.text.trim(),
+      lastName: _lastNameController.text.trim(),
+      phoneNumber: _phoneController.text.trim(),
     );
 
-    if (success && mounted) {
+    // Dismiss loading dialog
+    if (mounted) Navigator.of(context).pop();
+    
+    if (!mounted) return;
+
+    if (success) {
       // Invalidate the user profile cache to force refresh with new data
       ref.invalidate(userProfileProvider);
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Account created successfully!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      if (!mounted) return;
+      
+      // Navigate directly to home
       context.go('/home');
-    } else if (mounted) {
+    } else {
+      // Show error message
       final errorMessage = ref.read(authStateProvider).errorMessage;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(errorMessage ?? 'Signup failed. Please try again.'),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
         ),
       );
+      
+      // Stay on signup screen - don't navigate away
     }
   }
 
@@ -103,21 +118,45 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 ),
                 const SizedBox(height: 32),
                 
-                // Full Name Field
+                // First Name Field
                 TextFormField(
-                  controller: _fullNameController,
+                  controller: _firstNameController,
+                  textCapitalization: TextCapitalization.words,
                   decoration: const InputDecoration(
-                    labelText: 'Full Name',
-                    hintText: 'Enter your full name',
+                    labelText: 'First Name',
+                    hintText: 'Enter your first name',
                     prefixIcon: Icon(Icons.person_outline),
                     border: OutlineInputBorder(),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your full name';
+                      return 'Please enter your first name';
                     }
                     if (value.length < 2) {
-                      return 'Name must be at least 2 characters';
+                      return 'First name must be at least 2 characters';
+                    }
+                    return null;
+                  },
+                  enabled: !isLoading,
+                ),
+                const SizedBox(height: 16),
+                
+                // Last Name Field
+                TextFormField(
+                  controller: _lastNameController,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Last Name',
+                    hintText: 'Enter your last name',
+                    prefixIcon: Icon(Icons.person_outline),
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your last name';
+                    }
+                    if (value.length < 2) {
+                      return 'Last name must be at least 2 characters';
                     }
                     return null;
                   },
@@ -148,16 +187,27 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 ),
                 const SizedBox(height: 16),
                 
-                // Phone Field (Optional)
+                // Phone Field (Required)
                 TextFormField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
                   decoration: const InputDecoration(
-                    labelText: 'Phone Number (Optional)',
-                    hintText: 'Enter your phone number',
+                    labelText: 'Phone Number',
+                    hintText: 'e.g., +264 81 123 4567',
                     prefixIcon: Icon(Icons.phone_outlined),
                     border: OutlineInputBorder(),
                   ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Phone number is required';
+                    }
+                    // Remove spaces, hyphens, and parentheses
+                    final digitsOnly = value.replaceAll(RegExp(r'[^0-9+]'), '');
+                    if (digitsOnly.length < 8) {
+                      return 'Please enter a valid phone number';
+                    }
+                    return null;
+                  },
                   enabled: !isLoading,
                 ),
                 const SizedBox(height: 16),
@@ -268,6 +318,151 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       ),
                     ),
                   ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Glassmorphism Loading Dialog Widget
+class _GlassmorphismLoadingDialog extends StatefulWidget {
+  const _GlassmorphismLoadingDialog();
+
+  @override
+  State<_GlassmorphismLoadingDialog> createState() => _GlassmorphismLoadingDialogState();
+}
+
+class _GlassmorphismLoadingDialogState extends State<_GlassmorphismLoadingDialog> 
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _opacityAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _scaleAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+
+    _opacityAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(30),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            padding: const EdgeInsets.all(40),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(30),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withOpacity(0.15),
+                  Colors.teal.shade200.withOpacity(0.25),
+                ],
+              ),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.4),
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 40,
+                  spreadRadius: 10,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Loading spinner with glow effect
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.teal.withOpacity(0.5),
+                        blurRadius: 30,
+                        spreadRadius: 10,
+                      ),
+                    ],
+                  ),
+                  child: const CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    strokeWidth: 4,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                
+                // Message
+                AnimatedBuilder(
+                  animation: _opacityAnimation,
+                  builder: (context, child) {
+                    return Opacity(
+                      opacity: _opacityAnimation.value,
+                      child: Column(
+                        children: [
+                          const Text(
+                            'Creating your account...',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black38,
+                                  blurRadius: 8,
+                                ),
+                              ],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Welcome to HireMeBuddy!',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 16,
+                              shadows: const [
+                                Shadow(
+                                  color: Colors.black26,
+                                  blurRadius: 6,
+                                ),
+                              ],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ],
             ),

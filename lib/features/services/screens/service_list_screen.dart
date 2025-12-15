@@ -19,11 +19,63 @@ final allProvidersProvider = FutureProvider<List<Map<String, dynamic>>>((ref) as
   return providers;
 });
 
-class ServiceListScreen extends ConsumerWidget {
+class ServiceListScreen extends ConsumerStatefulWidget {
   const ServiceListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ServiceListScreen> createState() => _ServiceListScreenState();
+}
+
+class _ServiceListScreenState extends ConsumerState<ServiceListScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  String _selectedCategory = 'All';
+
+  // Common service categories in Namibia
+  final List<String> _categories = [
+    'All',
+    'Cleaning',
+    'Plumbing',
+    'Electrical',
+    'Carpentry',
+    'Painting',
+    'Gardening',
+    'Mechanic',
+    'Beauty & Wellness',
+    'Tutoring',
+    'IT & Tech',
+    'Security',
+    'Other',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: _categories.length, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  List<Map<String, dynamic>> _filterProvidersByCategory(
+    List<Map<String, dynamic>> providers,
+    String category,
+  ) {
+    if (category == 'All') return providers;
+
+    return providers.where((provider) {
+      final skills = (provider['skills'] as List<dynamic>?)?.cast<String>() ?? [];
+      return skills.any((skill) => 
+        skill.toLowerCase().contains(category.toLowerCase()) ||
+        category.toLowerCase().contains(skill.toLowerCase())
+      );
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Use real-time stream for automatic updates
     final providersAsync = ref.watch(allProvidersStreamProvider);
 
@@ -31,19 +83,35 @@ class ServiceListScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Service Providers'),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () {
-              // TODO: Implement filter by category
-            },
-          ),
-        ],
+        bottom: TabBar(
+          controller: _tabController,
+          isScrollable: true,
+          labelColor: Colors.teal,
+          unselectedLabelColor: Colors.grey,
+          indicatorColor: Colors.teal,
+          onTap: (index) {
+            setState(() {
+              _selectedCategory = _categories[index];
+            });
+          },
+          tabs: _categories.map((category) {
+            return Tab(
+              child: Row(
+                children: [
+                  Icon(_getCategoryIcon(category), size: 18),
+                  const SizedBox(width: 6),
+                  Text(category),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
       ),
       body: SafeArea(
         child: providersAsync.when(
           data: (providers) {
           print('ServiceListScreen: Rendering with ${providers.length} providers');
+          
           if (providers.isEmpty) {
             return const Center(
               child: Column(
@@ -65,12 +133,40 @@ class ServiceListScreen extends ConsumerWidget {
             );
           }
 
-          // Real-time updates enabled
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: providers.length,
-            itemBuilder: (context, index) {
-                  final provider = providers[index];
+          // Filter providers by selected category
+          final filteredProviders = _filterProvidersByCategory(providers, _selectedCategory);
+
+          return TabBarView(
+            controller: _tabController,
+            children: _categories.map((category) {
+              final categoryProviders = _filterProvidersByCategory(providers, category);
+              
+              if (categoryProviders.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(_getCategoryIcon(category), size: 64, color: Colors.grey.shade400),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No ${category == 'All' ? 'service providers' : '${category.toLowerCase()} providers'} available',
+                        style: const TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Check back later!',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: categoryProviders.length,
+                itemBuilder: (context, index) {
+                  final provider = categoryProviders[index];
                   final profile = provider['profiles'] as Map<String, dynamic>;
                   final providerId = profile['id'] as String;
                   final hourlyRate = provider['hourly_rate'] as num?;
@@ -343,9 +439,11 @@ class ServiceListScreen extends ConsumerWidget {
                   ),
                 );
               },
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
+            );
+          }).toList(),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) {
           print('ServiceListScreen: Error loading providers: $error');
           print('ServiceListScreen: Stack trace: $stack');
@@ -411,4 +509,33 @@ class ServiceListScreen extends ConsumerWidget {
       };
     }
   }
-}
+  IconData _getCategoryIcon(String category) {
+    switch (category.toLowerCase()) {
+      case 'all':
+        return Icons.grid_view;
+      case 'cleaning':
+        return Icons.cleaning_services;
+      case 'plumbing':
+        return Icons.plumbing;
+      case 'electrical':
+        return Icons.electrical_services;
+      case 'carpentry':
+        return Icons.carpenter;
+      case 'painting':
+        return Icons.format_paint;
+      case 'gardening':
+        return Icons.yard;
+      case 'mechanic':
+        return Icons.build;
+      case 'beauty & wellness':
+        return Icons.spa;
+      case 'tutoring':
+        return Icons.school;
+      case 'it & tech':
+        return Icons.computer;
+      case 'security':
+        return Icons.security;
+      default:
+        return Icons.work;
+    }
+  }}
