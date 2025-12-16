@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/utils/logger.dart';
@@ -6,6 +7,13 @@ class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
   NotificationService._internal();
+  
+  // Callback function for navigation - set by the app
+  static VoidCallback? _navigateToMessagesCallback;
+  
+  static void setNavigateToMessagesCallback(VoidCallback? callback) {
+    _navigateToMessagesCallback = callback;
+  }
 
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
@@ -86,7 +94,23 @@ class NotificationService {
 
   void _onNotificationTapped(NotificationResponse response) {
     _logger.debug('Notification tapped: ${response.payload}');
-    // TODO: Navigate to booking details based on payload
+    
+    // Navigate based on notification type
+    final payload = response.payload;
+    if (payload != null && payload == 'message') {
+      // Navigate to messages screen when message notification is tapped
+      _navigateToMessages();
+    }
+  }
+  
+  void _navigateToMessages() {
+    // Use the callback if available
+    if (_navigateToMessagesCallback != null) {
+      _navigateToMessagesCallback!();
+      _logger.info('Navigated to messages screen from notification via callback');
+    } else {
+      _logger.warning('Cannot navigate to messages: callback not set');
+    }
   }
 
   Future<void> showBookingNotification({

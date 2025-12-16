@@ -17,6 +17,7 @@ import '../../features/provider/screens/provider_registration_screen.dart';
 import '../../features/provider/screens/provider_dashboard_screen.dart';
 import '../../features/admin/screens/admin_dashboard_screen.dart';
 import '../../features/admin/screens/admin_login_screen.dart';
+import '../../features/chat/screens/conversations_screen.dart';
 
 // Provider Detail Loader widget
 class ProviderDetailLoader extends StatelessWidget {
@@ -171,7 +172,12 @@ class AppRouter {
         GoRoute(
           path: '/services',
           name: 'services',
-          builder: (context, state) => const ServiceListScreen(),
+          builder: (context, state) {
+            final category = state.uri.queryParameters['category'];
+            // Decode the category parameter
+            final decodedCategory = category != null ? Uri.decodeComponent(category) : null;
+            return ServiceListScreen(initialCategory: decodedCategory);
+          },
         ),
 
         // Provider Detail
@@ -197,6 +203,13 @@ class AppRouter {
           path: '/profile',
           name: 'profile',
           builder: (context, state) => const ProfileScreen(),
+        ),
+
+        // Messages/Conversations
+        GoRoute(
+          path: '/messages',
+          name: 'messages',
+          builder: (context, state) => const ConversationsScreen(),
         ),
 
         // Provider routes

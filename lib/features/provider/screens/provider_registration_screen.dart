@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -53,6 +54,13 @@ class _ProviderRegistrationScreenState
   bool _agreedToPrivacy = false;
 
   final ImagePicker _picker = ImagePicker();
+
+  String _capitalizeWords(String text) {
+    return text.split(' ').map((word) {
+      if (word.isEmpty) return word;
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
+  }
 
   @override
   void dispose() {
@@ -257,6 +265,7 @@ class _ProviderRegistrationScreenState
     }
   }
 
+  // ignore: unused_element
   void _previousStep() {
     if (_currentStep > 0) {
       setState(() {
@@ -265,12 +274,27 @@ class _ProviderRegistrationScreenState
     }
   }
 
+  Future<void> _showLoadingDialog() async {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withOpacity(0.25),
+      builder: (context) => const _GlassmorphismLoadingDialog(),
+    );
+  }
+
+  void _dismissLoadingDialog() {
+    if (Navigator.of(context, rootNavigator: true).canPop()) {
+      Navigator.of(context, rootNavigator: true).pop();
+    }
+  }
+
   Future<void> _handleRegistration() async {
     if (!_validateStep(_currentStep)) return;
 
     // Get the Supabase Auth user
-    final userAsync = ref.read(currentUserProvider);
-    final user = userAsync.value;
+    final user = await ref.read(currentUserProvider.future);
 
     if (user == null) {
       if (mounted) {
@@ -282,8 +306,7 @@ class _ProviderRegistrationScreenState
     }
 
     // Get the user profile with firstName/lastName
-    final profileAsync = ref.read(userProfileProvider);
-    final profile = profileAsync.value;
+    final profile = await ref.read(userProfileProvider.future);
 
     if (profile == null) {
       if (mounted) {
@@ -294,131 +317,138 @@ class _ProviderRegistrationScreenState
       return;
     }
 
-    // Upload images to Supabase storage
-    final supabase = Supabase.instance.client;
-    String? idFrontUrl;
-    String? idBackUrl;
-    String? headshotUrl;
-    List<String> servicePhotoUrls = [];
+    await _showLoadingDialog();
 
     try {
-      // Upload ID Front
-      if (_idFrontImage != null) {
-        final compressedImage = await _compressImage(_idFrontImage!);
-        final fileName = '${user.id}_id_front_${DateTime.now().millisecondsSinceEpoch}.jpg';
-        await supabase.storage
-            .from('verification-documents')
-            .uploadBinary(fileName, compressedImage);
-        idFrontUrl = supabase.storage.from('verification-documents').getPublicUrl(fileName);
-      }
+      // Upload images to Supabase storage
+      final supabase = Supabase.instance.client;
+      String? idFrontUrl;
+      String? idBackUrl;
+      String? headshotUrl;
+      List<String> servicePhotoUrls = [];
 
-      // Upload ID Back
-      if (_idBackImage != null) {
-        final compressedImage = await _compressImage(_idBackImage!);
-        final fileName = '${user.id}_id_back_${DateTime.now().millisecondsSinceEpoch}.jpg';
-        await supabase.storage
-            .from('verification-documents')
-            .uploadBinary(fileName, compressedImage);
-        idBackUrl = supabase.storage.from('verification-documents').getPublicUrl(fileName);
-      }
+      try {
+        // Upload ID Front
+        if (_idFrontImage != null) {
+          final compressedImage = await _compressImage(_idFrontImage!);
+          final fileName = '${user.id}_id_front_${DateTime.now().millisecondsSinceEpoch}.jpg';
+          await supabase.storage
+              .from('verification-documents')
+              .uploadBinary(fileName, compressedImage);
+          idFrontUrl = supabase.storage.from('verification-documents').getPublicUrl(fileName);
+        }
 
-      // Upload Headshot
-      if (_headshotImage != null) {
-        final compressedImage = await _compressImage(_headshotImage!);
-        final fileName = '${user.id}_headshot_${DateTime.now().millisecondsSinceEpoch}.jpg';
-        await supabase.storage
-            .from('verification-documents')
-            .uploadBinary(fileName, compressedImage);
-        headshotUrl = supabase.storage.from('verification-documents').getPublicUrl(fileName);
-      }
+        // Upload ID Back
+        if (_idBackImage != null) {
+          final compressedImage = await _compressImage(_idBackImage!);
+          final fileName = '${user.id}_id_back_${DateTime.now().millisecondsSinceEpoch}.jpg';
+          await supabase.storage
+              .from('verification-documents')
+              .uploadBinary(fileName, compressedImage);
+          idBackUrl = supabase.storage.from('verification-documents').getPublicUrl(fileName);
+        }
 
-      // Upload Service Photos
-      for (int i = 0; i < _servicePhotos.length; i++) {
-        final compressedImage = await _compressImage(_servicePhotos[i]);
-        final fileName = '${user.id}_service_${i}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-        await supabase.storage
-            .from('verification-documents')
-            .uploadBinary(fileName, compressedImage);
-        final url = supabase.storage.from('verification-documents').getPublicUrl(fileName);
-        servicePhotoUrls.add(url);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error uploading images: $e')),
-        );
-      }
-      return;
-    }
+        // Upload Headshot
+        if (_headshotImage != null) {
+          final compressedImage = await _compressImage(_headshotImage!);
+          final fileName = '${user.id}_headshot_${DateTime.now().millisecondsSinceEpoch}.jpg';
+          await supabase.storage
+              .from('verification-documents')
+              .uploadBinary(fileName, compressedImage);
+          headshotUrl = supabase.storage.from('verification-documents').getPublicUrl(fileName);
+        }
 
-    // Determine rate based on rate type
-    double? hourlyRate;
-    if (_rateType == 'hourly' && _hourlyRateController.text.trim().isNotEmpty) {
-      hourlyRate = double.tryParse(_hourlyRateController.text);
-    } else if (_rateType == 'daily' && _dailyRateController.text.trim().isNotEmpty) {
-      final dailyRate = double.tryParse(_dailyRateController.text);
-      if (dailyRate != null) {
-        hourlyRate = dailyRate / 8; // Convert to hourly
-      }
-    } else if (_rateType == 'base' && _baseRateController.text.trim().isNotEmpty) {
-      hourlyRate = double.tryParse(_baseRateController.text);
-    }
-
-    await ref.read(providerRegistrationProvider.notifier).registerProvider(
-          userId: user.id,
-          firstName: profile.firstName ?? '',
-          lastName: profile.lastName ?? '',
-          bio: _bioController.text.trim(),
-          skills: _skills,
-          hourlyRate: hourlyRate ?? 0.0,
-        );
-
-    final state = ref.read(providerRegistrationProvider);
-
-    if (state.error != null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed: ${state.error}'),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    } else if (state.profile != null) {
-      // Update provider profile with document URLs
-      await supabase.from('provider_profiles').update({
-        'id_front_url': idFrontUrl,
-        'id_back_url': idBackUrl,
-        'headshot_url': headshotUrl,
-        'service_photos_urls': servicePhotoUrls,
-        'documents_status': 'pending',
-      }).eq('id', user.id);
-
-      // Add services for selected categories
-      for (final categoryId in _selectedCategories) {
-        await ref.read(providerRegistrationProvider.notifier).addService(
-              providerId: user.id,
-              categoryId: categoryId,
-              description: _bioController.text.trim(),
-              basePrice: hourlyRate ?? 0.0,
-            );
-      }
-
-      if (mounted) {
-        ref.invalidate(userProfileProvider);
-        ref.invalidate(providerServicesProvider(user.id));
-        ref.invalidate(providerProfileProvider(user.id));
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registration successful! Documents sent for admin review.')),
-        );
-        
-        await Future.delayed(const Duration(milliseconds: 800));
-        
+        // Upload Service Photos
+        for (int i = 0; i < _servicePhotos.length; i++) {
+          final compressedImage = await _compressImage(_servicePhotos[i]);
+          final fileName = '${user.id}_service_${i}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+          await supabase.storage
+              .from('verification-documents')
+              .uploadBinary(fileName, compressedImage);
+          final url = supabase.storage.from('verification-documents').getPublicUrl(fileName);
+          servicePhotoUrls.add(url);
+        }
+      } catch (e) {
         if (mounted) {
-          context.go('/provider-dashboard');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error uploading images: $e')),
+          );
+        }
+        return;
+      }
+
+      // Determine rate based on rate type
+      double? hourlyRate;
+      if (_rateType == 'hourly' && _hourlyRateController.text.trim().isNotEmpty) {
+        hourlyRate = double.tryParse(_hourlyRateController.text);
+      } else if (_rateType == 'daily' && _dailyRateController.text.trim().isNotEmpty) {
+        final dailyRate = double.tryParse(_dailyRateController.text);
+        if (dailyRate != null) {
+          hourlyRate = dailyRate / 8; // Convert to hourly
+        }
+      } else if (_rateType == 'base' && _baseRateController.text.trim().isNotEmpty) {
+        hourlyRate = double.tryParse(_baseRateController.text);
+      }
+
+      await ref.read(providerRegistrationProvider.notifier).registerProvider(
+            userId: user.id,
+            firstName: profile.firstName ?? '',
+            lastName: profile.lastName ?? '',
+            bio: _bioController.text.trim(),
+            skills: _skills,
+            hourlyRate: hourlyRate ?? 0.0,
+          );
+
+      final state = ref.read(providerRegistrationProvider);
+
+      if (state.error != null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed: ${state.error}'),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      } else if (state.profile != null) {
+        // Update provider profile with document URLs
+        await supabase.from('provider_profiles').update({
+          'id_front_url': idFrontUrl,
+          'id_back_url': idBackUrl,
+          'headshot_url': headshotUrl,
+          'service_photos_urls': servicePhotoUrls,
+          'documents_status': 'pending',
+        }).eq('id', user.id);
+
+        // Add services for selected categories
+        for (final categoryId in _selectedCategories) {
+      await ref.read(providerRegistrationProvider.notifier).addService(
+            providerId: user.id,
+            categoryId: categoryId,
+            description: _bioController.text.trim(),
+            basePrice: hourlyRate ?? 0.0,
+            rateType: _rateType,
+          );
+        }
+
+        if (mounted) {
+          ref.invalidate(userProfileProvider);
+          ref.invalidate(providerServicesProvider(user.id));
+          ref.invalidate(providerProfileProvider(user.id));
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Registration successful! Documents sent for admin review.')),
+          );
+          
+          await Future.delayed(const Duration(milliseconds: 800));
+          
+          if (mounted) {
+            context.go('/provider-dashboard');
+          }
         }
       }
+    } finally {
+      _dismissLoadingDialog();
     }
   }
 
@@ -432,90 +462,77 @@ class _ProviderRegistrationScreenState
         title: const Text('Provider Registration'),
         elevation: 0,
       ),
-      body: Stack(
-        children: [
-          Column(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 450),
+          child: Stack(
             children: [
-              // Progress Indicator
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: List.generate(4, (index) {
-                    return Expanded(
-                      child: Container(
-                        height: 4,
-                        margin: EdgeInsets.only(
-                          right: index < 3 ? 8 : 0,
-                        ),
-                        decoration: BoxDecoration(
-                          color: index <= _currentStep
-                              ? Theme.of(context).primaryColor
-                              : Colors.grey[300],
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    );
-                  }),
-                ),
-              ),
-              Expanded(
-                child: _buildStepContent(),
-              ),
-              // Navigation Buttons
-              Container(
-                padding: EdgeInsets.only(
-                  left: 16.0,
-                  right: 16.0,
-                  top: 16.0,
-                  bottom: 16.0 + MediaQuery.of(context).padding.bottom,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, -5),
+              Column(
+                children: [
+                  // Progress Indicator
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      children: List.generate(4, (index) {
+                        return Expanded(
+                          child: Container(
+                            height: 4,
+                            margin: EdgeInsets.only(
+                              right: index < 3 ? 8 : 0,
+                            ),
+                            decoration: BoxDecoration(
+                              color: index <= _currentStep
+                                  ? Theme.of(context).primaryColor
+                                  : Colors.grey[300],
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        );
+                      }),
                     ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    if (_currentStep > 0)
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: isLoading ? null : _previousStep,
-                          child: const Text('Back'),
-                        ),
-                      ),
-                    if (_currentStep > 0) const SizedBox(width: 16),
-                    Expanded(
-                      flex: _currentStep == 0 ? 1 : 1,
+                  ),
+                  Expanded(
+                    child: _buildStepContent(),
+                  ),
+                  // Navigation Buttons
+                  Container(
+                    padding: EdgeInsets.only(
+                      left: 20.0,
+                      right: 20.0,
+                      top: 16.0,
+                      bottom: 18.0 + MediaQuery.of(context).padding.bottom,
+                    ),
+                    color: Colors.transparent,
+                    child: SizedBox(
+                      width: double.infinity,
                       child: ElevatedButton(
                         onPressed: isLoading ? null : _nextStep,
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         child: Text(
                           _currentStep < 3 ? 'Next' : 'Complete Registration',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 14),
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+              if (isLoading)
+                Container(
+                  color: Colors.black.withOpacity(0.3),
+                  child: const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
             ],
           ),
-          if (isLoading)
-            Container(
-              color: Colors.black.withOpacity(0.3),
-              child: const Center(
-                child: CircularProgressIndicator(),
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
@@ -748,8 +765,9 @@ class _ProviderRegistrationScreenState
                 runSpacing: 8,
                 children: categories.map((category) {
                   final isSelected = _selectedCategories.contains(category.id);
+                  final displayName = _capitalizeWords(category.name);
                   return FilterChip(
-                    label: Text(category.name),
+                    label: Text(displayName),
                     selected: isSelected,
                     onSelected: (selected) {
                       setState(() {
@@ -1089,6 +1107,146 @@ class _ProviderRegistrationScreenState
               contentPadding: EdgeInsets.zero,
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GlassmorphismLoadingDialog extends StatefulWidget {
+  const _GlassmorphismLoadingDialog();
+
+  @override
+  State<_GlassmorphismLoadingDialog> createState() => _GlassmorphismLoadingDialogState();
+}
+
+class _GlassmorphismLoadingDialogState extends State<_GlassmorphismLoadingDialog>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _opacityAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _scaleAnimation = Tween<double>(begin: 0.96, end: 1.04).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+
+    _opacityAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(30),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              return Transform.scale(
+                scale: _scaleAnimation.value,
+                child: Opacity(
+                  opacity: _opacityAnimation.value,
+                  child: Container(
+                    padding: const EdgeInsets.all(36),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(30),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.white.withOpacity(0.15),
+                          Colors.deepOrange.shade200.withOpacity(0.25),
+                        ],
+                      ),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.35),
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 30,
+                          spreadRadius: 8,
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.deepOrange.withOpacity(0.45),
+                                blurRadius: 28,
+                                spreadRadius: 10,
+                              ),
+                            ],
+                          ),
+                          child: const CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            strokeWidth: 4,
+                          ),
+                        ),
+                        const SizedBox(height: 26),
+                        const Text(
+                          'Creating your provider account...',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black38,
+                                blurRadius: 8,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'Please stay on this screen while we set up your services.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 14,
+                            shadows: const [
+                              Shadow(
+                                color: Colors.black26,
+                                blurRadius: 6,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
         ),
       ),
     );

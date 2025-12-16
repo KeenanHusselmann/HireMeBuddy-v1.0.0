@@ -28,6 +28,14 @@ class ProviderDetailScreen extends ConsumerWidget {
     final skills = (provider['skills'] as List<dynamic>?)?.cast<String>() ?? [];
     final bio = provider['bio'] as String?;
 
+    String _capitalizeWords(String text) {
+      return text
+          .split(' ')
+          .map((word) =>
+              word.isEmpty ? word : '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}')
+          .join(' ');
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Provider Details'),
@@ -254,20 +262,145 @@ class ProviderDetailScreen extends ConsumerWidget {
                                     final category = service['service_categories'] as Map<String, dynamic>?;
                                     final basePrice = service['base_price'] as num?;
                                     final description = service['description'] as String?;
+                                    final rateType = (service['rate_type'] as String?)?.toLowerCase() ?? 'base';
                                     
+                                    // Helper function to format rate display
+                                    Widget buildRateDisplay() {
+                                      if (basePrice == null) return const SizedBox.shrink();
+                                      
+                                      if (rateType == 'daily') {
+                                        return Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Daily Rate: N\$${basePrice.toStringAsFixed(2)}',
+                                              style: TextStyle(
+                                                color: Colors.teal.shade700,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 15,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              'Hourly (derived): N\$${(basePrice / 8).toStringAsFixed(2)}',
+                                              style: TextStyle(
+                                                color: Colors.grey.shade700,
+                                                fontWeight: FontWeight.w500,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      } else if (rateType == 'hourly') {
+                                        return Text(
+                                          'Hourly Rate: N\$${basePrice.toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                            color: Colors.teal.shade700,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 15,
+                                          ),
+                                        );
+                                      } else {
+                                        return Text(
+                                          'Base Price: N\$${basePrice.toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                            color: Colors.teal.shade700,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 15,
+                                          ),
+                                        );
+                                      }
+                                    }
+                                    
+                                    final isServiceAvailable = service['is_available'] ?? true;
+
                                     return Card(
                                       margin: const EdgeInsets.only(bottom: 12),
                                       child: ListTile(
-                                        leading: CircleAvatar(
-                                          backgroundColor: Colors.teal.shade100,
-                                          child: Icon(
-                                            Icons.work,
-                                            color: Colors.teal.shade700,
-                                          ),
+                                        leading: Stack(
+                                          children: [
+                                            CircleAvatar(
+                                              backgroundColor: isServiceAvailable
+                                                  ? Colors.teal.shade100
+                                                  : Colors.grey.shade200,
+                                              child: Icon(
+                                                Icons.work,
+                                                color: isServiceAvailable
+                                                    ? Colors.teal.shade700
+                                                    : Colors.grey.shade600,
+                                              ),
+                                            ),
+                                            if (!isServiceAvailable)
+                                              Positioned(
+                                                bottom: 0,
+                                                right: 0,
+                                                child: Container(
+                                                  padding: const EdgeInsets.all(2),
+                                                  decoration: const BoxDecoration(
+                                                    color: Colors.red,
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.close,
+                                                    size: 12,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
                                         ),
-                                        title: Text(
-                                          category?['name'] ?? 'Service',
-                                          style: const TextStyle(fontWeight: FontWeight.bold),
+                                        title: Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                _capitalizeWords(category?['name'] ?? 'Service'),
+                                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                              ),
+                                            ),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 8,
+                                                vertical: 4,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: isServiceAvailable 
+                                                    ? Colors.green.shade50 
+                                                    : Colors.grey.shade100,
+                                                borderRadius: BorderRadius.circular(12),
+                                                border: Border.all(
+                                                  color: isServiceAvailable 
+                                                      ? Colors.green.shade300 
+                                                      : Colors.grey.shade300,
+                                                  width: 1,
+                                                ),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                    isServiceAvailable 
+                                                        ? Icons.check_circle 
+                                                        : Icons.cancel,
+                                                    size: 14,
+                                                    color: isServiceAvailable 
+                                                        ? Colors.green.shade700 
+                                                        : Colors.grey.shade700,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  Text(
+                                                    isServiceAvailable ? 'Available' : 'Unavailable',
+                                                    style: TextStyle(
+                                                      fontSize: 11,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: isServiceAvailable 
+                                                          ? Colors.green.shade700 
+                                                          : Colors.grey.shade700,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                         subtitle: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -277,18 +410,12 @@ class ProviderDetailScreen extends ConsumerWidget {
                                               Text(description),
                                             ],
                                             if (basePrice != null) ...[
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                '\$${basePrice.toStringAsFixed(2)}',
-                                                style: TextStyle(
-                                                  color: Colors.teal.shade700,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
+                                              const SizedBox(height: 6),
+                                              buildRateDisplay(),
                                             ],
                                           ],
                                         ),
-                                        isThreeLine: description != null,
+                                        isThreeLine: description != null || (basePrice != null && rateType == 'daily'),
                                       ),
                                     );
                                   }).toList(),

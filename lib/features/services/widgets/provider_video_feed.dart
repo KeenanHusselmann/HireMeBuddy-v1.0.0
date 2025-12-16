@@ -90,18 +90,26 @@ class ProviderVideoFeed extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.all(16.0),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
               child: Row(
                 children: [
-                  Icon(Icons.video_library, color: Colors.teal, size: 28),
-                  SizedBox(width: 12),
-                  Text(
+                  const Icon(Icons.video_library, color: Colors.teal, size: 28),
+                  const SizedBox(width: 12),
+                  const Text(
                     'Discover Providers',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.refresh, color: Colors.teal),
+                    onPressed: () {
+                      ref.invalidate(randomProviderVideosProvider);
+                    },
+                    tooltip: 'Refresh providers',
                   ),
                 ],
               ),

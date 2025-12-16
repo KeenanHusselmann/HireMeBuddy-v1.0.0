@@ -122,6 +122,13 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
   bool _notificationsInitialized = false;
   String? _providerId;
 
+  String _capitalizeWords(String text) {
+    return text.split(' ').map((word) {
+      if (word.isEmpty) return word;
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
+  }
+
   @override
   void initState() {
     super.initState();
@@ -276,12 +283,15 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
         ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-          padding: const EdgeInsets.only(bottom: 80),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1200),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 80),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
               // Welcome Header with Availability Toggle
               Container(
               decoration: BoxDecoration(
@@ -596,10 +606,84 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
                             ),
                           ],
                           const SizedBox(height: 12),
-                          _buildInfoRow('Hourly Rate', '\$${providerProfile.hourlyRate.toStringAsFixed(2)}/hr'),
-                          _buildInfoRow('Average Rating', '${providerProfile.averageRating.toStringAsFixed(1)} ⭐'),
-                          _buildInfoRow('Total Reviews', '${providerProfile.totalReviews}'),
-                          _buildInfoRow('Completed Jobs', '${providerProfile.completedJobs}'),
+                          // Show daily + hourly rate summary based on registered services
+                          Consumer(
+                            builder: (context, ref, _) {
+                              final servicesAsync = ref.watch(providerServicesProvider(user.id));
+
+                              return servicesAsync.when(
+                                data: (services) {
+                                  num? dailyRate;
+
+                                  for (final service in services) {
+                                    final rateType =
+                                        (service['rate_type'] as String?)?.toLowerCase();
+                                    if (rateType == 'daily') {
+                                      final base = service['base_price'] as num?;
+                                      if (base != null) {
+                                        dailyRate = base;
+                                        break;
+                                      }
+                                    }
+                                  }
+
+                                  return Column(
+                                    children: [
+                                      if (dailyRate != null)
+                                        _buildInfoRow(
+                                          'Daily Rate',
+                                          'N\$${dailyRate.toStringAsFixed(2)}',
+                                        ),
+                                      _buildInfoRow(
+                                        'Average Rating',
+                                        '${providerProfile.averageRating.toStringAsFixed(1)} ⭐',
+                                      ),
+                                      _buildInfoRow(
+                                        'Total Reviews',
+                                        '${providerProfile.totalReviews}',
+                                      ),
+                                      _buildInfoRow(
+                                        'Completed Jobs',
+                                        '${providerProfile.completedJobs}',
+                                      ),
+                                    ],
+                                  );
+                                },
+                                loading: () => Column(
+                                  children: [
+                                    _buildInfoRow(
+                                      'Average Rating',
+                                      '${providerProfile.averageRating.toStringAsFixed(1)} ⭐',
+                                    ),
+                                    _buildInfoRow(
+                                      'Total Reviews',
+                                      '${providerProfile.totalReviews}',
+                                    ),
+                                    _buildInfoRow(
+                                      'Completed Jobs',
+                                      '${providerProfile.completedJobs}',
+                                    ),
+                                  ],
+                                ),
+                                error: (_, __) => Column(
+                                  children: [
+                                    _buildInfoRow(
+                                      'Average Rating',
+                                      '${providerProfile.averageRating.toStringAsFixed(1)} ⭐',
+                                    ),
+                                    _buildInfoRow(
+                                      'Total Reviews',
+                                      '${providerProfile.totalReviews}',
+                                    ),
+                                    _buildInfoRow(
+                                      'Completed Jobs',
+                                      '${providerProfile.completedJobs}',
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
                         ],
                       ),
                     ),
@@ -687,21 +771,50 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              category['name'] ?? 'Unknown Service',
+                                              _capitalizeWords(category['name'] ?? 'Unknown Service'),
                                               style: const TextStyle(
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.bold,
                                               ),
                                             ),
                                             const SizedBox(height: 4),
-                                            Text(
-                                              'Base Price: N\$${service['base_price']}',
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                color: Colors.teal.shade700,
-                                                fontWeight: FontWeight.w600,
+                                            if ((service['rate_type'] as String?)?.toLowerCase() == 'daily') ...[
+                                              Text(
+                                                'Daily Rate: N\$${service['base_price']}',
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  color: Colors.teal.shade700,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
                                               ),
-                                            ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                'Hourly (derived): N\$${(((service['base_price'] as num?) ?? 0) / 8).toStringAsFixed(2)}',
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  color: Colors.grey.shade700,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ] else if ((service['rate_type'] as String?)?.toLowerCase() == 'hourly') ...[
+                                              Text(
+                                                'Hourly Rate: N\$${service['base_price']}',
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  color: Colors.teal.shade700,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ] else ...[
+                                              Text(
+                                                'Base Price: N\$${service['base_price']}',
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  color: Colors.teal.shade700,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
                                           ],
                                         ),
                                       ),
@@ -749,7 +862,7 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
                                                   serviceId: service['id'],
                                                   isAvailable: value,
                                                 );
-                                            ref.invalidate(providerServicesProvider);
+                                            ref.invalidate(providerServicesProvider(user.id));
                                             if (context.mounted) {
                                               ScaffoldMessenger.of(context).showSnackBar(
                                                 SnackBar(
@@ -838,7 +951,7 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
                                               await ref
                                                   .read(providerServiceProvider)
                                                   .deleteProviderService(service['id']);
-                                              ref.invalidate(providerServicesProvider);
+                                              ref.invalidate(providerServicesProvider(user.id));
                                               if (context.mounted) {
                                                 ScaffoldMessenger.of(context).showSnackBar(
                                                   const SnackBar(
@@ -1058,16 +1171,90 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
                     },
                   ),
                   const SizedBox(height: 12),
-                  _buildActionCard(
-                    context,
-                    'Reviews',
-                    Icons.star,
-                    Colors.amber,
-                    () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ProviderReviewsScreen(),
+                  // Reviews action with badge showing total review count
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final providerProfileAsync = ref.watch(providerProfileProvider(user.id));
+
+                      return providerProfileAsync.when(
+                        data: (profile) {
+                          final providerProfile = profile;
+                          final totalReviews = providerProfile?.totalReviews ?? 0;
+
+                          return Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              _buildActionCard(
+                                context,
+                                'Reviews',
+                                Icons.star,
+                                Colors.amber,
+                                () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const ProviderReviewsScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
+                              if (totalReviews > 0)
+                                Positioned(
+                                  right: 8,
+                                  top: -4,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.red.withOpacity(0.3),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Text(
+                                      totalReviews.toString(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          );
+                        },
+                        loading: () => _buildActionCard(
+                          context,
+                          'Reviews',
+                          Icons.star,
+                          Colors.amber,
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const ProviderReviewsScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        error: (_, __) => _buildActionCard(
+                          context,
+                          'Reviews',
+                          Icons.star,
+                          Colors.amber,
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const ProviderReviewsScreen(),
+                              ),
+                            );
+                          },
                         ),
                       );
                     },
@@ -1077,9 +1264,11 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
             ),
 
             const SizedBox(height: 16),
-          ],
-        ),
-        ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -1093,11 +1282,17 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
         children: [
           Text(
             label,
-            style: const TextStyle(color: Colors.grey),
+            style: const TextStyle(
+              color: Colors.black87,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           Text(
             value,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
           ),
         ],
       ),

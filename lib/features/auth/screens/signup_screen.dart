@@ -92,31 +92,33 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         centerTitle: true,
       ),
       body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const AppLogo(width: 180),
-                const SizedBox(height: 48),
-                const Text(
-                  'Join HireMeBuddy',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Create your account',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[600],
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 380),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(18),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const AppLogo(width: 140),
+                  const SizedBox(height: 32),
+                  const Text(
+                    'Join HireMeBuddy',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Create your account',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
                 
                 // First Name Field
                 TextFormField(
@@ -324,6 +326,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           ),
         ),
       ),
+      ),
     );
   }
 }
@@ -339,6 +342,7 @@ class _GlassmorphismLoadingDialog extends StatefulWidget {
 class _GlassmorphismLoadingDialogState extends State<_GlassmorphismLoadingDialog> 
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  // ignore: unused_field
   late Animation<double> _scaleAnimation;
   late Animation<double> _opacityAnimation;
 

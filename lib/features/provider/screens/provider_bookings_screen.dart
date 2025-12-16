@@ -11,6 +11,22 @@ final bookingServiceProvider = Provider<BookingService>((ref) {
   return BookingService();
 });
 
+// Provider to check if a booking has been paid
+final bookingPaymentStatusProvider = FutureProvider.autoDispose.family<String, String>((ref, bookingId) async {
+  final supabase = Supabase.instance.client;
+  try {
+    final payment = await supabase
+        .from('payments')
+        .select('status')
+        .eq('booking_id', bookingId)
+        .eq('status', 'paid')
+        .maybeSingle();
+    return payment != null ? 'paid' : 'pending';
+  } catch (e) {
+    return 'pending';
+  }
+});
+
 final providerBookingsProvider = StreamProvider.autoDispose<List<BookingWithClient>>((ref) {
   final supabase = Supabase.instance.client;
   final bookingService = BookingService();
@@ -267,6 +283,7 @@ class _ProviderBookingsScreenState extends ConsumerState<ProviderBookingsScreen>
         itemBuilder: (context, index) {
           final bookingWithClient = bookings[index];
           final booking = bookingWithClient.booking;
+          // Payment status will be checked via provider in the UI
           final statusColor = _getStatusColor(booking.status.value);
           final statusIcon = _getStatusIcon(booking.status.value);
 
@@ -293,7 +310,7 @@ class _ProviderBookingsScreenState extends ConsumerState<ProviderBookingsScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Job Number, Status Badge and Price
+                    // Job Number, Status Badge
                     Row(
                       children: [
                         // Job Number
@@ -313,51 +330,126 @@ class _ProviderBookingsScreenState extends ConsumerState<ProviderBookingsScreen>
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: statusColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: statusColor),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                statusIcon,
-                                size: 16,
-                                color: statusColor,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                booking.status.value.toUpperCase(),
-                                style: TextStyle(
-                                  color: statusColor,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
+                        Consumer(
+                          builder: (context, ref, child) {
+                            final paymentStatusAsync = ref.watch(bookingPaymentStatusProvider(booking.id));
+                            return paymentStatusAsync.when(
+                              data: (paymentStatus) {
+                                final isPaid = paymentStatus == 'paid';
+                                final displayStatusColor = isPaid ? Colors.grey : statusColor;
+                                final displayStatusIcon = isPaid ? Icons.payments : statusIcon;
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: displayStatusColor.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: displayStatusColor),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        displayStatusIcon,
+                                        size: 16,
+                                        color: displayStatusColor,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        isPaid ? 'PROVIDER PAID' : booking.status.value.toUpperCase(),
+                                        style: TextStyle(
+                                          color: displayStatusColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                              loading: () => Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: statusColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: statusColor),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      statusIcon,
+                                      size: 16,
+                                      color: statusColor,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      booking.status.value.toUpperCase(),
+                                      style: TextStyle(
+                                        color: statusColor,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          'N\$${booking.totalPrice.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.deepOrange.shade700,
-                          ),
+                              error: (_, __) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: statusColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: statusColor),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      statusIcon,
+                                      size: 16,
+                                      color: statusColor,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      booking.status.value.toUpperCase(),
+                                      style: TextStyle(
+                                        color: statusColor,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
 
+                    const SizedBox(height: 8),
+
+                    // Total Amount (below job number to avoid overflow)
+                    Text(
+                      'N\$${booking.totalPrice.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.deepOrange.shade700,
+                      ),
+                    ),
+
                     const SizedBox(height: 16),
-                  const Divider(height: 1),
-                  const SizedBox(height: 16),
+                    const Divider(height: 1),
+                    const SizedBox(height: 16),
 
                   // Client Information Section
                   Row(
@@ -454,10 +546,10 @@ class _ProviderBookingsScreenState extends ConsumerState<ProviderBookingsScreen>
                     ],
                   ),
 
-                  const SizedBox(height: 12),
+                    const SizedBox(height: 12),
 
-                  // Accept button for pending bookings
-                  if (booking.status.value == 'pending')
+                    // Accept button for pending bookings
+                    if (booking.status.value == 'pending')
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(

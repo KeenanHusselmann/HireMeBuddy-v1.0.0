@@ -15,15 +15,20 @@ class _AddServiceScreenState extends ConsumerState<AddServiceScreen> {
   final _formKey = GlobalKey<FormState>();
   final _descriptionController = TextEditingController();
   final _basePriceController = TextEditingController();
+  final _hourlyRateController = TextEditingController();
+  final _dailyRateController = TextEditingController();
   final _customCategoryController = TextEditingController();
   String? _selectedCategoryId;
   bool _isLoading = false;
   bool _showCustomInput = false;
+  String _rateType = 'base';
 
   @override
   void dispose() {
     _descriptionController.dispose();
     _basePriceController.dispose();
+    _hourlyRateController.dispose();
+    _dailyRateController.dispose();
     _customCategoryController.dispose();
     super.dispose();
   }
@@ -67,7 +72,9 @@ class _AddServiceScreenState extends ConsumerState<AddServiceScreen> {
       return;
     }
 
-    final user = ref.read(currentUserProvider).value;
+    final userAsync = ref.read(currentUserProvider);
+    final user = userAsync.value;
+    
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -81,178 +88,102 @@ class _AddServiceScreenState extends ConsumerState<AddServiceScreen> {
       return;
     }
 
-    // Check for duplicate service
-    final existingServicesAsync = ref.read(providerServicesProvider(user.id));
-    await existingServicesAsync.when(
-      data: (services) async {
-        // Only check duplicates if selecting from existing categories
-        if (!_showCustomInput) {
-          final isDuplicate = services.any((service) => 
-            service['service_category_id'] == _selectedCategoryId
+    setState(() => _isLoading = true);
+
+    try {
+      String categoryId;
+      
+      // If custom category, create it first
+      if (_showCustomInput) {
+        categoryId = await ref
+            .read(providerServiceProvider)
+            .createCustomCategory(_customCategoryController.text.trim());
+      } else {
+        categoryId = _selectedCategoryId!;
+      }
+      
+      // Determine rate based on rate type - exactly like registration screen
+      double? selectedPrice;
+      if (_rateType == 'hourly' && _hourlyRateController.text.trim().isNotEmpty) {
+        selectedPrice = double.tryParse(_hourlyRateController.text);
+      } else if (_rateType == 'daily' && _dailyRateController.text.trim().isNotEmpty) {
+        final dailyRate = double.tryParse(_dailyRateController.text);
+        if (dailyRate != null) {
+          selectedPrice = dailyRate; // Store daily rate as-is
+        }
+      } else if (_rateType == 'base' && _basePriceController.text.trim().isNotEmpty) {
+        selectedPrice = double.tryParse(_basePriceController.text);
+      }
+
+      if (selectedPrice == null || selectedPrice <= 0) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please enter a valid price', style: TextStyle(fontSize: 13)),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.all(8),
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            ),
           );
-          
-          if (isDuplicate) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Service already added', style: TextStyle(fontSize: 13)),
-                backgroundColor: Colors.orange,
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.all(8),
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              ),
-            );
-            return;
-          }
         }
+        setState(() => _isLoading = false);
+        return;
+      }
 
-        setState(() => _isLoading = true);
+      // Add service - exactly like registration screen
+      await ref.read(providerRegistrationProvider.notifier).addService(
+            providerId: user.id,
+            categoryId: categoryId,
+            description: _descriptionController.text.trim(),
+            basePrice: selectedPrice,
+            rateType: _rateType,
+          );
 
-        try {
-          String categoryId;
-          
-          // If custom category, create it first
-          if (_showCustomInput) {
-            categoryId = await ref
-                .read(providerServiceProvider)
-                .createCustomCategory(_customCategoryController.text.trim());
-          } else {
-            categoryId = _selectedCategoryId!;
-          }
-          
-          await ref.read(providerRegistrationProvider.notifier).addService(
-                providerId: user.id,
-                categoryId: categoryId,
-                description: _descriptionController.text.trim(),
-                basePrice: double.parse(_basePriceController.text),
-              );
+      print('✅ [ADD SERVICE] Service added successfully for user: ${user.id}');
 
-          // Invalidate the services provider to refresh the dashboard
-          print('✅ Service added! Invalidating providers for user: ${user.id}');
-          ref.invalidate(providerServicesProvider(user.id));
-          ref.invalidate(providerProfileProvider(user.id));
-          ref.invalidate(serviceCategoriesProvider); // Refresh categories too
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Service added!', style: TextStyle(fontSize: 13)),
-                backgroundColor: Colors.green,
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.all(8),
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              ),
-            );
-            
-            // Wait a moment then pop to allow providers to invalidate
-            Future.delayed(const Duration(milliseconds: 300), () {
-              if (mounted) context.pop();
-            });
-          }
-        } catch (e) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Failed: $e', style: const TextStyle(fontSize: 13)),
-                backgroundColor: Colors.red,
-                behavior: SnackBarBehavior.floating,
-                margin: const EdgeInsets.all(8),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              ),
-            );
-          }
-        } finally {
-          if (mounted) {
-            setState(() => _isLoading = false);
-          }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Service added!', style: TextStyle(fontSize: 13)),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.all(8),
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          ),
+        );
+        
+        // Invalidate providers to force refresh
+        ref.invalidate(userProfileProvider);
+        ref.invalidate(providerServicesProvider(user.id));
+        ref.invalidate(providerProfileProvider(user.id));
+        
+        print('✅ [ADD SERVICE] Providers invalidated');
+        
+        // Navigate to dashboard - autoDispose will ensure fresh fetch
+        await Future.delayed(const Duration(milliseconds: 200));
+        
+        if (mounted) {
+          context.go('/provider-dashboard');
         }
-      },
-      loading: () async {
-        // If still loading, proceed without duplicate check
-        setState(() => _isLoading = true);
-        try {
-          await ref.read(providerRegistrationProvider.notifier).addService(
-                providerId: user.id,
-                categoryId: _selectedCategoryId!,
-                description: _descriptionController.text.trim(),
-                basePrice: double.parse(_basePriceController.text),
-              );
-
-          ref.invalidate(providerServicesProvider);
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Service added!', style: TextStyle(fontSize: 13)),
-                backgroundColor: Colors.green,
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.all(8),
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              ),
-            );
-            context.pop();
-          }
-        } catch (e) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Failed: $e', style: const TextStyle(fontSize: 13)),
-                backgroundColor: Colors.red,
-                behavior: SnackBarBehavior.floating,
-                margin: const EdgeInsets.all(8),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              ),
-            );
-          }
-        } finally {
-          if (mounted) {
-            setState(() => _isLoading = false);
-          }
-        }
-      },
-      error: (error, stack) async {
-        // On error, proceed without duplicate check
-        setState(() => _isLoading = true);
-        try {
-          await ref.read(providerRegistrationProvider.notifier).addService(
-                providerId: user.id,
-                categoryId: _selectedCategoryId!,
-                description: _descriptionController.text.trim(),
-                basePrice: double.parse(_basePriceController.text),
-              );
-
-          ref.invalidate(providerServicesProvider);
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Service added!', style: TextStyle(fontSize: 13)),
-                backgroundColor: Colors.green,
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.all(8),
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              ),
-            );
-            context.pop();
-          }
-        } catch (e) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Failed: $e', style: const TextStyle(fontSize: 13)),
-                backgroundColor: Colors.red,
-                behavior: SnackBarBehavior.floating,
-                margin: const EdgeInsets.all(8),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              ),
-            );
-          }
-        } finally {
-          if (mounted) {
-            setState(() => _isLoading = false);
-          }
-        }
-      },
-    );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed: $e', style: const TextStyle(fontSize: 13)),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -291,7 +222,7 @@ class _AddServiceScreenState extends ConsumerState<AddServiceScreen> {
                             ),
                           ),
                           isExpanded: true,
-                          menuMaxHeight: 300, // Makes dropdown scrollable
+                          menuMaxHeight: 300,
                           items: activeCategories.map((category) {
                             return DropdownMenuItem(
                               value: category.id,
@@ -366,57 +297,143 @@ class _AddServiceScreenState extends ConsumerState<AddServiceScreen> {
                         ),
                       ],
                     ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
 
-                  // Description Field
+                  // Description Field (moved before rate type to match registration screen order)
                   TextFormField(
                     controller: _descriptionController,
                     maxLines: 4,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       labelText: 'Service Description',
                       hintText: 'Describe what you offer for this service',
-                      prefixIcon: const Icon(Icons.description),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      prefixIcon: Icon(Icons.description),
+                      border: OutlineInputBorder(),
                     ),
                     validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Enter a description';
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter a description';
                       }
-                      if (value.length < 10) {
+                      if (value.trim().length < 10) {
                         return 'Description must be at least 10 characters';
                       }
                       return null;
                     },
                     enabled: !_isLoading,
                   ),
+                  const SizedBox(height: 24),
+
+                  // Rate Type Selection - exactly like registration screen
+                  Text(
+                    'Rate Type',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      ChoiceChip(
+                        label: const Text('Base Rate'),
+                        selected: _rateType == 'base',
+                        onSelected: (selected) {
+                          if (selected) {
+                            setState(() {
+                              _rateType = 'base';
+                            });
+                          }
+                        },
+                      ),
+                      ChoiceChip(
+                        label: const Text('Hourly Rate'),
+                        selected: _rateType == 'hourly',
+                        onSelected: (selected) {
+                          if (selected) {
+                            setState(() {
+                              _rateType = 'hourly';
+                            });
+                          }
+                        },
+                      ),
+                      ChoiceChip(
+                        label: const Text('Daily Rate'),
+                        selected: _rateType == 'daily',
+                        onSelected: (selected) {
+                          if (selected) {
+                            setState(() {
+                              _rateType = 'daily';
+                            });
+                          }
+                        },
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 16),
 
-                  // Base Price Field
-                  TextFormField(
-                    controller: _basePriceController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: 'Base Price (\$)',
-                      hintText: 'Enter your rate for this service',
-                      prefixIcon: const Icon(Icons.attach_money),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  // Rate Input based on selection - exactly like registration screen
+                  if (_rateType == 'base')
+                    TextFormField(
+                      controller: _basePriceController,
+                      decoration: const InputDecoration(
+                        labelText: 'Base Rate (R)',
+                        hintText: 'Enter your base rate',
+                        border: OutlineInputBorder(),
+                        prefixText: 'R ',
                       ),
+                      keyboardType: TextInputType.number,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter base rate';
+                        }
+                        if (double.tryParse(value) == null) {
+                          return 'Please enter a valid number';
+                        }
+                        return null;
+                      },
+                      enabled: !_isLoading,
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Enter a base price';
-                      }
-                      final price = double.tryParse(value);
-                      if (price == null || price <= 0) {
-                        return 'Enter a valid price';
-                      }
-                      return null;
-                    },
-                    enabled: !_isLoading,
-                  ),
+                  if (_rateType == 'hourly')
+                    TextFormField(
+                      controller: _hourlyRateController,
+                      decoration: const InputDecoration(
+                        labelText: 'Hourly Rate (R)',
+                        hintText: 'Enter your hourly rate',
+                        border: OutlineInputBorder(),
+                        prefixText: 'R ',
+                      ),
+                      keyboardType: TextInputType.number,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter hourly rate';
+                        }
+                        if (double.tryParse(value) == null) {
+                          return 'Please enter a valid number';
+                        }
+                        return null;
+                      },
+                      enabled: !_isLoading,
+                    ),
+                  if (_rateType == 'daily')
+                    TextFormField(
+                      controller: _dailyRateController,
+                      decoration: const InputDecoration(
+                        labelText: 'Daily Rate (R)',
+                        hintText: 'Enter your daily rate',
+                        border: OutlineInputBorder(),
+                        prefixText: 'R ',
+                      ),
+                      keyboardType: TextInputType.number,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter daily rate';
+                        }
+                        if (double.tryParse(value) == null) {
+                          return 'Please enter a valid number';
+                        }
+                        return null;
+                      },
+                      enabled: !_isLoading,
+                    ),
                   const SizedBox(height: 24),
 
                   // Add Service Button

@@ -20,7 +20,9 @@ final allProvidersProvider = FutureProvider<List<Map<String, dynamic>>>((ref) as
 });
 
 class ServiceListScreen extends ConsumerStatefulWidget {
-  const ServiceListScreen({super.key});
+  final String? initialCategory;
+  
+  const ServiceListScreen({super.key, this.initialCategory});
 
   @override
   ConsumerState<ServiceListScreen> createState() => _ServiceListScreenState();
@@ -29,6 +31,8 @@ class ServiceListScreen extends ConsumerStatefulWidget {
 class _ServiceListScreenState extends ConsumerState<ServiceListScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String _selectedCategory = 'All';
+  String? _searchFilter; // Store the search query for filtering
+  String? _matchedCategory; // Store which category tab the search matched to
 
   // Common service categories in Namibia
   final List<String> _categories = [
@@ -51,6 +55,54 @@ class _ServiceListScreenState extends ConsumerState<ServiceListScreen> with Sing
   void initState() {
     super.initState();
     _tabController = TabController(length: _categories.length, vsync: this);
+    
+    // Set initial category and search filter if provided
+    if (widget.initialCategory != null) {
+      _searchFilter = widget.initialCategory;
+      
+      // Try to match the search query to an existing category tab
+      final categoryIndex = _categories.indexWhere(
+        (cat) => cat.toLowerCase() == widget.initialCategory!.toLowerCase() ||
+                 cat.toLowerCase().contains(widget.initialCategory!.toLowerCase()) ||
+                 widget.initialCategory!.toLowerCase().contains(cat.toLowerCase())
+      );
+      
+      if (categoryIndex != -1) {
+        _matchedCategory = _categories[categoryIndex];
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _selectedCategory = _categories[categoryIndex];
+          _tabController.animateTo(categoryIndex);
+          setState(() {});
+        });
+      } else {
+        // If exact match not found, try to find a partial match
+        // e.g., "Web Development" -> "IT & Tech"
+        final partialMatch = _categories.indexWhere(
+          (cat) {
+            final searchLower = widget.initialCategory!.toLowerCase();
+            final catLower = cat.toLowerCase();
+            // Check if search contains category or category contains key words from search
+            return searchLower.contains(catLower) ||
+                   catLower.contains(searchLower.split(' ').first) ||
+                   (searchLower.contains('web') && catLower.contains('tech')) ||
+                   (searchLower.contains('development') && catLower.contains('tech'));
+          }
+        );
+        
+        if (partialMatch != -1) {
+          _matchedCategory = _categories[partialMatch];
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _selectedCategory = _categories[partialMatch];
+            _tabController.animateTo(partialMatch);
+            setState(() {});
+          });
+        } else {
+          // If no match, stay on "All" tab and clear search filter
+          _selectedCategory = 'All';
+          _searchFilter = null;
+        }
+      }
+    }
   }
 
   @override
@@ -63,15 +115,170 @@ class _ServiceListScreenState extends ConsumerState<ServiceListScreen> with Sing
     List<Map<String, dynamic>> providers,
     String category,
   ) {
-    if (category == 'All') return providers;
+    // Always show all providers on "All" tab (unless it's the matched category)
+    if (category == 'All') {
+      // Don't apply search filter on All tab - always show all providers
+      return providers;
+    }
 
+    // For specific categories, if this is the matched category with search filter,
+    // use category-based filtering (same as normal category filtering) since
+    // we've already matched the search to this category
+    if (_searchFilter != null && _searchFilter!.isNotEmpty && _matchedCategory == category) {
+      // Use the same category filtering logic that works when browsing normally
+      // This ensures we show all providers in this category
+      final categoryLower = category.toLowerCase();
+      return providers.where((provider) {
+        final skills = (provider['skills'] as List<dynamic>?)?.cast<String>() ?? [];
+        final bio = (provider['bio'] as String? ?? '').toLowerCase();
+        
+        // Check provider's selected service categories first (from provider_services)
+        final serviceCategoryNames = (provider['service_category_names'] as List<dynamic>?)?.cast<String>() ?? [];
+        final hasMatchingCategory = serviceCategoryNames.any((categoryName) {
+          final catNameLower = categoryName.toLowerCase();
+          return catNameLower.contains(categoryLower) ||
+                 categoryLower.contains(catNameLower) ||
+                 _matchesCategorySkill(catNameLower, categoryLower);
+        });
+        
+        if (hasMatchingCategory) return true;
+        
+        // Also check if category matches any skill or bio
+        return skills.any((skill) {
+          final skillLower = skill.toLowerCase();
+          return skillLower.contains(categoryLower) ||
+                 categoryLower.contains(skillLower) ||
+                 _matchesCategorySkill(skillLower, categoryLower);
+        }) || bio.contains(categoryLower);
+      }).toList();
+    }
+    
+    // Normal category-based filtering (when no search filter or for non-matched categories)
     return providers.where((provider) {
       final skills = (provider['skills'] as List<dynamic>?)?.cast<String>() ?? [];
-      return skills.any((skill) => 
-        skill.toLowerCase().contains(category.toLowerCase()) ||
-        category.toLowerCase().contains(skill.toLowerCase())
-      );
+      final bio = (provider['bio'] as String? ?? '').toLowerCase();
+      final categoryLower = category.toLowerCase();
+      
+      // Check provider's selected service categories first (from provider_services)
+      final serviceCategoryNames = (provider['service_category_names'] as List<dynamic>?)?.cast<String>() ?? [];
+      final hasMatchingCategory = serviceCategoryNames.any((categoryName) {
+        final catNameLower = categoryName.toLowerCase();
+        return catNameLower.contains(categoryLower) ||
+               categoryLower.contains(catNameLower) ||
+               _matchesCategorySkill(catNameLower, categoryLower);
+      });
+      
+      if (hasMatchingCategory) return true;
+      
+      // Also check if category matches any skill or bio
+      return skills.any((skill) {
+        final skillLower = skill.toLowerCase();
+        return skillLower.contains(categoryLower) ||
+               categoryLower.contains(skillLower) ||
+               _matchesCategorySkill(skillLower, categoryLower);
+      }) || bio.contains(categoryLower);
     }).toList();
+  }
+  
+  // Helper to match category with skills
+  bool _matchesCategorySkill(String skill, String category) {
+    final skillLower = skill.toLowerCase();
+    final categoryLower = category.toLowerCase();
+    
+    // IT & Tech category matching
+    if (categoryLower.contains('tech')) {
+      return skillLower.contains('web') || 
+             skillLower.contains('development') || 
+             skillLower.contains('programming') || 
+             skillLower.contains('coding') ||
+             skillLower.contains('software') || 
+             skillLower.contains('app') ||
+             skillLower.contains('it support') ||
+             skillLower.contains('it support') ||
+             skillLower.contains('computer') ||
+             skillLower.contains('technical') ||
+             skillLower.contains('tech') ||
+             skillLower.contains('it ') ||
+             skillLower == 'it' ||
+             skillLower.contains('information technology') ||
+             skillLower.contains('network') ||
+             skillLower.contains('system');
+    }
+    
+    // Tutoring category matching
+    if (categoryLower.contains('tutor')) {
+      return skillLower.contains('tutor') || 
+             skillLower.contains('teaching') || 
+             skillLower.contains('education');
+    }
+    
+    // Beauty & Wellness category matching
+    if (categoryLower.contains('wellness') || categoryLower.contains('beauty')) {
+      return skillLower.contains('beauty') || 
+             skillLower.contains('wellness') ||
+             skillLower.contains('spa') || 
+             skillLower.contains('salon') ||
+             skillLower.contains('massage') ||
+             skillLower.contains('skincare');
+    }
+    
+    // Cleaning category matching
+    if (categoryLower.contains('clean')) {
+      return skillLower.contains('clean') ||
+             skillLower.contains('housekeeping') ||
+             skillLower.contains('janitor');
+    }
+    
+    // Plumbing category matching
+    if (categoryLower.contains('plumb')) {
+      return skillLower.contains('plumb') ||
+             skillLower.contains('pipe') ||
+             skillLower.contains('water');
+    }
+    
+    // Electrical category matching
+    if (categoryLower.contains('electric')) {
+      return skillLower.contains('electric') ||
+             skillLower.contains('wiring') ||
+             skillLower.contains('circuit');
+    }
+    
+    // Carpentry category matching
+    if (categoryLower.contains('carpent')) {
+      return skillLower.contains('carpent') ||
+             skillLower.contains('wood') ||
+             skillLower.contains('furniture');
+    }
+    
+    // Painting category matching
+    if (categoryLower.contains('paint')) {
+      return skillLower.contains('paint') ||
+             skillLower.contains('decorat');
+    }
+    
+    // Gardening category matching
+    if (categoryLower.contains('garden')) {
+      return skillLower.contains('garden') ||
+             skillLower.contains('landscap') ||
+             skillLower.contains('lawn');
+    }
+    
+    // Mechanic category matching
+    if (categoryLower.contains('mechanic')) {
+      return skillLower.contains('mechanic') ||
+             skillLower.contains('auto') ||
+             skillLower.contains('vehicle') ||
+             skillLower.contains('car repair');
+    }
+    
+    // Security category matching
+    if (categoryLower.contains('security')) {
+      return skillLower.contains('security') ||
+             skillLower.contains('guard') ||
+             skillLower.contains('protect');
+    }
+    
+    return false;
   }
 
   @override
@@ -86,12 +293,23 @@ class _ServiceListScreenState extends ConsumerState<ServiceListScreen> with Sing
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
-          labelColor: Colors.teal,
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: Colors.teal,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          indicatorColor: Colors.white,
+          labelStyle: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.w500,
+            fontSize: 14,
+          ),
           onTap: (index) {
             setState(() {
               _selectedCategory = _categories[index];
+              // Clear search filter and matched category when user manually changes tabs
+              _searchFilter = null;
+              _matchedCategory = null;
             });
           },
           tabs: _categories.map((category) {
@@ -132,9 +350,6 @@ class _ServiceListScreenState extends ConsumerState<ServiceListScreen> with Sing
               ),
             );
           }
-
-          // Filter providers by selected category
-          final filteredProviders = _filterProvidersByCategory(providers, _selectedCategory);
 
           return TabBarView(
             controller: _tabController,

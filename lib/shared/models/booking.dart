@@ -17,6 +17,7 @@ class Booking {
   final String? workCompleted;
   final String? issuesEncountered;
   final DateTime? completedAt;
+  final String paymentStatus;
   final BookingStatus status;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -40,6 +41,7 @@ class Booking {
     this.workCompleted,
     this.issuesEncountered,
     this.completedAt,
+      required this.paymentStatus,
     required this.status,
     required this.createdAt,
     required this.updatedAt,
@@ -65,6 +67,7 @@ class Booking {
       workCompleted: json['work_completed'] as String?,
       issuesEncountered: json['issues_encountered'] as String?,
       completedAt: json['completed_at'] != null ? DateTime.parse(json['completed_at'] as String) : null,
+      paymentStatus: 'pending', // Payment status determined by checking payments table
       status: BookingStatus.fromString(json['status'] as String),
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
@@ -91,6 +94,7 @@ class Booking {
       'work_completed': workCompleted,
       'issues_encountered': issuesEncountered,
       'completed_at': completedAt?.toIso8601String(),
+      'payment_status': paymentStatus,
       'status': status.value,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),

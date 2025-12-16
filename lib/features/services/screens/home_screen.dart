@@ -9,6 +9,7 @@ import '../../../shared/services/notification_service.dart';
 import '../../../shared/services/workmanager_notification_service.dart';
 import '../../bookings/screens/my_bookings_screen.dart';
 import '../widgets/provider_video_feed.dart';
+import '../../chat/screens/conversations_screen.dart';
 
 // Real-time stream provider for client pending bookings count
 final clientPendingBookingsCountProvider = StreamProvider.autoDispose<int>((ref) async* {
@@ -298,8 +299,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     : null,
                 onTap: () {
                   Navigator.of(context).pop();
-                  // Navigate to services list
-                  context.push('/services');
+                  // Navigate to services list filtered by this service
+                  final serviceName = service['name'] as String;
+                  // URL encode the category to handle spaces and special characters
+                  final encodedCategory = Uri.encodeComponent(serviceName);
+                  context.push('/services?category=$encodedCategory');
                 },
               );
             },
@@ -313,9 +317,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              context.push('/services');
+              // Get the first service category name to filter by
+              final firstServiceName = results.isNotEmpty 
+                  ? results[0]['name'] as String 
+                  : searchQuery;
+              // URL encode the category to handle spaces and special characters
+              final encodedCategory = Uri.encodeComponent(firstServiceName);
+              context.push('/services?category=$encodedCategory');
             },
-            child: const Text('Browse All Services'),
+            child: const Text('Browse'),
           ),
         ],
       ),
@@ -453,6 +463,56 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             error: (_, __) => const Text('Welcome!'),
           ),
           actions: [
+            // Messages bell with unread badge
+            Consumer(
+              builder: (context, ref, child) {
+                final unreadAsync = ref.watch(clientUnreadMessagesCountProvider);
+                final unreadCount = unreadAsync.when(
+                  data: (count) => count,
+                  loading: () => 0,
+                  error: (_, __) => 0,
+                );
+
+                return Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.notifications_none),
+                      tooltip: 'Messages',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ConversationsScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    if (unreadCount > 0)
+                      Positioned(
+                        right: 6,
+                        top: 6,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            unreadCount > 9 ? '9+' : '$unreadCount',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+            // Existing overflow menu
             IconButton(
               icon: const Icon(Icons.more_vert),
               color: Colors.white,

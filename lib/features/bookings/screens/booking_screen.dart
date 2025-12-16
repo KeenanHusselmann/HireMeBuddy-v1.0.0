@@ -506,7 +506,10 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                                   borderSide: const BorderSide(color: Colors.teal, width: 2),
                                 ),
                               ),
-                              style: const TextStyle(color: Colors.white, fontSize: 16),
+                              style: TextStyle(
+                                color: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87,
+                                fontSize: 16,
+                              ),
                             );
                           },
                         ),
@@ -533,7 +536,10 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                         TextField(
                           controller: _jobInstructionsController,
                           maxLines: 4,
-                          style: const TextStyle(color: Colors.white, fontSize: 16),
+                          style: TextStyle(
+                            color: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87,
+                            fontSize: 16,
+                          ),
                           decoration: InputDecoration(
                             hintText: 'Describe the work to be done in detail...',
                             hintStyle: TextStyle(color: Colors.grey.shade400),
@@ -569,7 +575,10 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                         TextField(
                           controller: _budgetController,
                           keyboardType: TextInputType.number,
-                          style: const TextStyle(color: Colors.white, fontSize: 16),
+                          style: TextStyle(
+                            color: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87,
+                            fontSize: 16,
+                          ),
                           decoration: InputDecoration(
                             hintText: 'Enter your budget in N\$',
                             hintStyle: TextStyle(color: Colors.grey.shade400),
@@ -606,7 +615,10 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                         TextField(
                           controller: _secondaryContactController,
                           keyboardType: TextInputType.phone,
-                          style: const TextStyle(color: Colors.white, fontSize: 16),
+                          style: TextStyle(
+                            color: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87,
+                            fontSize: 16,
+                          ),
                           decoration: InputDecoration(
                             hintText: 'Alternative phone number',
                             hintStyle: TextStyle(color: Colors.grey.shade400),
@@ -643,7 +655,10 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                         TextField(
                           controller: _notesController,
                           maxLines: 3,
-                          style: const TextStyle(color: Colors.white, fontSize: 16),
+                          style: TextStyle(
+                            color: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87,
+                            fontSize: 16,
+                          ),
                           decoration: InputDecoration(
                             hintText: 'Any other details...',
                             hintStyle: TextStyle(color: Colors.grey.shade400),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../shared/services/review_service.dart';
+import 'my_bookings_screen.dart' show bookingPaymentStatusProvider, clientBookingsProvider, reviewStatusProvider;
 
 class AddReviewScreen extends ConsumerStatefulWidget {
   final String bookingId;
@@ -50,7 +52,29 @@ class _AddReviewScreenState extends ConsumerState<AddReviewScreen> {
             : _commentController.text.trim(),
       );
 
+      // Notify provider about new review
+      try {
+        final supabase = Supabase.instance.client;
+        await supabase.rpc(
+          'send_notification',
+          params: {
+            'p_user_id': widget.providerId,
+            'p_title': 'New Review Received',
+            'p_body': 'A client left you a new review.',
+            'p_type': 'review',
+          },
+        );
+      } catch (e) {
+        // Log but don't block the review flow
+        print('Error sending review notification: $e');
+      }
+
       if (mounted) {
+        // Invalidate payment status provider to refresh the "Pay Provider" button immediately
+        ref.invalidate(bookingPaymentStatusProvider(widget.bookingId));
+        ref.invalidate(clientBookingsProvider);
+        ref.invalidate(reviewStatusProvider(widget.bookingId));
+        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Review submitted successfully!')),
         );

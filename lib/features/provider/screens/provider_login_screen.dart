@@ -75,39 +75,42 @@ class _ProviderLoginScreenState extends ConsumerState<ProviderLoginScreen> {
             ],
           ),
         ),
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    const SizedBox(height: 60),
-                    // Header Section - Logo without background
-                    const AppLogo(width: 160),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'PROVIDER LOGIN',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Manage your services & bookings',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white.withOpacity(0.9),
-                      ),
-                    ),
-                    const SizedBox(height: 40),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 450),
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 60),
+                        // Header Section - Logo without background
+                        const AppLogo(width: 160),
+                        const SizedBox(height: 20),
+                        const Text(
+                          'PROVIDER LOGIN',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Manage your services & bookings',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.white.withOpacity(0.9),
+                          ),
+                        ),
+                        const SizedBox(height: 40),
 
-                    // Login Form Card
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 24),
-                      padding: const EdgeInsets.all(24),
+                        // Login Form Card
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 24),
+                          padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
@@ -266,24 +269,26 @@ class _ProviderLoginScreenState extends ConsumerState<ProviderLoginScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
-                  ],
+                        const SizedBox(height: 20),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            SafeArea(
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                color: Colors.black.withOpacity(0.2),
-                child: const Text(
-                  '© 2025 HireMeBuddy Provider. All rights reserved.',
-                  style: TextStyle(color: Colors.white, fontSize: 11),
-                  textAlign: TextAlign.center,
+                SafeArea(
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    color: Colors.black.withOpacity(0.2),
+                    child: const Text(
+                      '© 2025 HireMeBuddy Provider. All rights reserved.',
+                      style: TextStyle(color: Colors.white, fontSize: 11),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

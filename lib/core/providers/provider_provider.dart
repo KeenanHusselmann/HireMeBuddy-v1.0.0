@@ -35,10 +35,46 @@ final providerProfileProvider = StreamProvider.family<ProviderProfile?, String>(
   }
 });
 
-// Provider Services Provider
-final providerServicesProvider = FutureProvider.family<List<Map<String, dynamic>>, String>((ref, providerId) async {
-  final service = ref.watch(providerServiceProvider);
-  return service.getProviderServices(providerId);
+// Provider Services Provider - Real-time stream for instant updates
+final providerServicesProvider = StreamProvider.autoDispose.family<List<Map<String, dynamic>>, String>((ref, providerId) {
+  final supabase = Supabase.instance.client;
+  
+  // Stream provider_services for real-time updates (e.g., availability status)
+  // Fetch service categories for each service
+  return supabase
+      .from('provider_services')
+      .stream(primaryKey: ['id'])
+      .eq('provider_id', providerId)
+      .order('created_at', ascending: false)
+      .asyncMap((services) async {
+        // For each service, fetch the related service category
+        final List<Map<String, dynamic>> servicesWithCategories = [];
+        
+        for (var service in services) {
+          try {
+            final categoryId = service['service_category_id'] as String?;
+            if (categoryId != null) {
+              final category = await supabase
+                  .from('service_categories')
+                  .select()
+                  .eq('id', categoryId)
+                  .maybeSingle();
+              
+              servicesWithCategories.add({
+                ...service,
+                'service_categories': category,
+              });
+            } else {
+              servicesWithCategories.add(service);
+            }
+          } catch (e) {
+            // If category fetch fails, still include the service
+            servicesWithCategories.add(service);
+          }
+        }
+        
+        return servicesWithCategories;
+      });
 });
 
 // Real-time Providers Stream Provider
@@ -67,13 +103,32 @@ final allProvidersStreamProvider = StreamProvider.autoDispose<List<Map<String, d
                 .eq('id', providerId)
                 .maybeSingle();
             
+            // Fetch provider services with categories
+            final providerServices = await supabase
+                .from('provider_services')
+                .select('service_categories(name)')
+                .eq('provider_id', providerId);
+            
+            // Extract category names from services
+            final categoryNames = <String>[];
+            for (var service in providerServices) {
+              final category = service['service_categories'];
+              if (category != null && category is Map) {
+                final categoryName = category['name'] as String?;
+                if (categoryName != null) {
+                  categoryNames.add(categoryName);
+                }
+              }
+            }
+            
             if (userProfile != null) {
               final mergedData = {
                 ...providerProfile,
                 'profiles': userProfile,
+                'service_category_names': categoryNames, // Add category names for filtering
               };
               
-              print('✅ [REALTIME] Provider ${userProfile['full_name']} - Available: ${providerProfile['is_available']}');
+              print('✅ [REALTIME] Provider ${userProfile['full_name']} - Available: ${providerProfile['is_available']} - Categories: $categoryNames');
               providersWithProfiles.add(mergedData);
             }
           } catch (e) {
@@ -183,6 +238,7 @@ class ProviderRegistrationNotifier extends StateNotifier<ProviderRegistrationSta
     required String categoryId,
     required String description,
     required double basePrice,
+    String rateType = 'base',
   }) async {
     state = state.copyWith(isLoading: true, error: null);
 
@@ -192,6 +248,7 @@ class ProviderRegistrationNotifier extends StateNotifier<ProviderRegistrationSta
         categoryId: categoryId,
         description: description,
         basePrice: basePrice,
+        rateType: rateType,
       );
 
       state = state.copyWith(isLoading: false);

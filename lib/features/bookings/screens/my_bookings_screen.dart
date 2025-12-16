@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../shared/services/booking_service.dart';
 import '../../../shared/services/review_service.dart';
 import '../../../shared/models/booking.dart';
@@ -17,6 +18,22 @@ final reviewStatusProvider = FutureProvider.family.autoDispose<bool, String>((re
   } catch (e) {
     print('Error checking review status: $e');
     return false; // Default to no review on error
+  }
+});
+
+// Provider to check if a booking has been paid
+final bookingPaymentStatusProvider = FutureProvider.autoDispose.family<String, String>((ref, bookingId) async {
+  final supabase = Supabase.instance.client;
+  try {
+    final payment = await supabase
+        .from('payments')
+        .select('status')
+        .eq('booking_id', bookingId)
+        .eq('status', 'paid')
+        .maybeSingle();
+    return payment != null ? 'paid' : 'pending';
+  } catch (e) {
+    return 'pending';
   }
 });
 
@@ -39,6 +56,8 @@ class MyBookingsScreen extends ConsumerStatefulWidget {
 
 class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  // Track bookings that were just paid in this session so the UI updates instantly
+  final Set<String> _locallyPaidBookings = {};
 
   @override
   void initState() {
@@ -115,9 +134,17 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> with Single
         bottom: TabBar(
           controller: _tabController,
           isScrollable: false,
-          labelColor: Colors.teal,
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: Colors.teal,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          indicatorColor: Colors.white,
+          labelStyle: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.w500,
+            fontSize: 14,
+          ),
           tabs: const [
             Tab(text: 'All'),
             Tab(text: 'Pending'),
@@ -147,17 +174,21 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> with Single
           ),
         ),
         data: (bookings) {
+          // Sort bookings by date received (createdAt descending)
+          final sortedBookings = [...bookings]
+            ..sort((a, b) => b.booking.createdAt.compareTo(a.booking.createdAt));
+
           return TabBarView(
             controller: _tabController,
             children: [
               // All tab
-              _buildBookingsList(bookings, bookings, isAllTab: true),
+              _buildBookingsList(sortedBookings, sortedBookings, isAllTab: true),
               // Pending tab
-              _buildBookingsList(bookings, _filterBookings(bookings, 1)),
+              _buildBookingsList(sortedBookings, _filterBookings(sortedBookings, 1)),
               // Accepted tab
-              _buildBookingsList(bookings, _filterBookings(bookings, 2)),
+              _buildBookingsList(sortedBookings, _filterBookings(sortedBookings, 2)),
               // Completed tab
-              _buildBookingsList(bookings, _filterBookings(bookings, 3)),
+              _buildBookingsList(sortedBookings, _filterBookings(sortedBookings, 3)),
             ],
           );
         },
@@ -189,14 +220,16 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> with Single
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              const SizedBox(height: 8),
+              const Text(
+                'See a quick summary of your new booking updates by status.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey,
+                ),
+              ),
               const SizedBox(height: 16),
-              GridView.count(
-                crossAxisCount: 2,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1.3,
+              Column(
                 children: [
                   _buildStatusCard(
                     title: 'Pending',
@@ -206,29 +239,32 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> with Single
                     onTap: () => _tabController.animateTo(1),
                     showBadge: pendingCount > 0,
                   ),
+                  const SizedBox(height: 12),
                   _buildStatusCard(
                     title: 'Accepted',
                     count: confirmedCount,
                     icon: Icons.check_circle,
                     color: Colors.green,
                     onTap: () => _tabController.animateTo(2),
-                    showBadge: false,
+                    showBadge: confirmedCount > 0,
                   ),
+                  const SizedBox(height: 12),
                   _buildStatusCard(
                     title: 'Completed',
                     count: completedCount,
                     icon: Icons.done_all,
                     color: Colors.blue,
                     onTap: () => _tabController.animateTo(3),
-                    showBadge: false,
+                    showBadge: completedCount > 0,
                   ),
+                  const SizedBox(height: 12),
                   _buildStatusCard(
                     title: 'Cancelled',
                     count: cancelledCount,
                     icon: Icons.cancel,
                     color: Colors.red,
                     onTap: null,
-                    showBadge: false,
+                    showBadge: cancelledCount > 0,
                   ),
                 ],
               ),
@@ -336,16 +372,34 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> with Single
                           ],
                         ),
                       ),
-                      const Spacer(),
-                      Flexible(
-                        child: Text(
-                          'N\$${booking.booking.totalPrice.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.teal.shade700,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 12),
+                  
+                  // Total Price - Displayed prominently on its own line
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.payments,
+                        size: 24,
+                        color: Colors.teal.shade700,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Total: ',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey.shade700,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        'N\$${booking.booking.totalPrice.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.teal.shade700,
                         ),
                       ),
                     ],
@@ -525,66 +579,98 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> with Single
                             Consumer(
                               builder: (context, ref, child) {
                                 final hasReviewAsync = ref.watch(reviewStatusProvider(booking.booking.id));
+                                final paymentStatusAsync = ref.watch(bookingPaymentStatusProvider(booking.booking.id));
                                 
-                                return hasReviewAsync.when(
-                                  data: (hasReview) {
-                                    return Column(
-                                      children: [
+                                return paymentStatusAsync.when(
+                                  data: (paymentStatus) {
+                                    return hasReviewAsync.when(
+                                      data: (hasReview) {
+                                        final isPaid = paymentStatus == 'paid' ||
+                                            _locallyPaidBookings.contains(booking.booking.id);
+                                        return Column(
+                                          children: [
                                         SizedBox(
                                           width: double.infinity,
                                           child: ElevatedButton.icon(
-                                            onPressed: () async {
-                                              final result = await Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) => PaymentScreen(
-                                                    booking: booking.booking,
-                                                    providerName: booking.providerName,
-                                                  ),
-                                                ),
-                                              );
-                                              if (result == true) {
-                                                ref.invalidate(clientBookingsProvider);
-                                              }
-                                            },
-                                            icon: const Icon(Icons.payments),
-                                            label: const Text('Pay Provider'),
+                                            onPressed: isPaid
+                                                ? null
+                                                : () async {
+                                                    final result = await Navigator.push(
+                                                      context,
+                                                      MaterialPageRoute(
+                                                        builder: (context) => PaymentScreen(
+                                                          booking: booking.booking,
+                                                          providerName: booking.providerName,
+                                                          providerPhone: booking.providerPhone,
+                                                        ),
+                                                      ),
+                                                    );
+                                                    if (result == true) {
+                                                      // Mark as paid locally so the UI updates instantly
+                                                      setState(() {
+                                                        _locallyPaidBookings.add(booking.booking.id);
+                                                      });
+                                                      // Also refresh remote providers for consistency
+                                                      ref.invalidate(clientBookingsProvider);
+                                                      ref.invalidate(bookingPaymentStatusProvider(booking.booking.id));
+                                                    }
+                                                  },
+                                            icon: Icon(
+                                              isPaid
+                                                  ? Icons.check_circle
+                                                  : Icons.payments,
+                                            ),
+                                            label: Text(
+                                              isPaid
+                                                  ? 'Provider Paid'
+                                                  : 'Pay Provider',
+                                            ),
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.teal,
-                                              foregroundColor: Colors.white,
+                                              backgroundColor:
+                                                  isPaid
+                                                      ? Colors.grey.shade300
+                                                      : Colors.teal,
+                                              foregroundColor:
+                                                  isPaid
+                                                      ? Colors.grey.shade700
+                                                      : Colors.white,
                                               padding: const EdgeInsets.symmetric(vertical: 12),
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(height: 8),
-                                        SizedBox(
-                                          width: double.infinity,
-                                          child: OutlinedButton.icon(
-                                            onPressed: hasReview ? null : () async {
-                                              final result = await Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) => AddReviewScreen(
-                                                    bookingId: booking.booking.id,
-                                                    providerId: booking.booking.providerId,
-                                                    providerName: booking.providerName,
-                                                  ),
+                                            const SizedBox(height: 8),
+                                            SizedBox(
+                                              width: double.infinity,
+                                              child: OutlinedButton.icon(
+                                                onPressed: hasReview ? null : () async {
+                                                  final result = await Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) => AddReviewScreen(
+                                                        bookingId: booking.booking.id,
+                                                        providerId: booking.booking.providerId,
+                                                        providerName: booking.providerName,
+                                                      ),
+                                                    ),
+                                                  );
+                                                  if (result == true) {
+                                                    ref.invalidate(clientBookingsProvider);
+                                                    ref.invalidate(reviewStatusProvider(booking.booking.id));
+                                                  }
+                                                },
+                                                icon: Icon(hasReview ? Icons.check_circle : Icons.rate_review),
+                                                label: Text(hasReview ? 'Review Submitted' : 'Write Review'),
+                                                style: OutlinedButton.styleFrom(
+                                                  foregroundColor: hasReview ? Colors.green : null,
+                                                  padding: const EdgeInsets.symmetric(vertical: 12),
                                                 ),
-                                              );
-                                              if (result == true) {
-                                                ref.invalidate(clientBookingsProvider);
-                                                ref.invalidate(reviewStatusProvider(booking.booking.id));
-                                              }
-                                            },
-                                            icon: Icon(hasReview ? Icons.check_circle : Icons.rate_review),
-                                            label: Text(hasReview ? 'Review Submitted' : 'Write Review'),
-                                            style: OutlinedButton.styleFrom(
-                                              foregroundColor: hasReview ? Colors.green : null,
-                                              padding: const EdgeInsets.symmetric(vertical: 12),
+                                              ),
                                             ),
-                                          ),
-                                        ),
-                                      ],
+                                          ],
+                                        );
+                                      },
+                                      loading: () => const CircularProgressIndicator(),
+                                      error: (error, stack) => const SizedBox(),
                                     );
                                   },
                                   loading: () => const CircularProgressIndicator(),
@@ -683,68 +769,69 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> with Single
               ],
             ),
           ),
-          child: Stack(
+          child: Row(
             children: [
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      icon,
-                      size: 32,
-                      color: color,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '$count ${count == 1 ? 'booking' : 'bookings'}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade700,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
+              // Icon on the left
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  size: 32,
+                  color: color,
+                ),
               ),
-              if (showBadge && count > 0)
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.red.withOpacity(0.3),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      '$count',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
+              const SizedBox(width: 16),
+              // Text content in the middle
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: color,
                       ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$count ${count == 1 ? 'booking' : 'bookings'}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Badge on the right
+              if (showBadge && count > 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.red.withOpacity(0.3),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    '$count',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),

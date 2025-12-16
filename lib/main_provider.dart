@@ -6,36 +6,36 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/config/supabase_config.dart';
 import 'core/config/provider_router.dart';
 
-void main() async {
-  // Initialize bindings
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  // Load environment variables (handle missing file gracefully)
-  try {
-    await dotenv.load(fileName: ".env");
-  } catch (e) {
-    debugPrint('Warning: .env file not found, using default configuration');
-    // Initialize dotenv with empty map to prevent NotInitializedError
-    dotenv.testLoad(fileInput: '');
-  }
+Future<void> main() async {
+  // Keep everything in the same zone to avoid zone mismatch errors
+  await runZonedGuarded<Future<void>>(() async {
+    // Initialize bindings
+    WidgetsFlutterBinding.ensureInitialized();
+    
+    // Load environment variables (handle missing file gracefully)
+    try {
+      await dotenv.load(fileName: ".env");
+    } catch (e) {
+      debugPrint('Warning: .env file not found, using default configuration');
+      // Initialize dotenv with empty map to prevent NotInitializedError
+      dotenv.testLoad(fileInput: '');
+    }
 
-  // Initialize Supabase
-  await Supabase.initialize(
-    url: SupabaseConfig.supabaseUrl,
-    anonKey: SupabaseConfig.supabaseAnonKey,
-    authOptions: const FlutterAuthClientOptions(
-      authFlowType: AuthFlowType.pkce,
-    ),
-  );
+    // Initialize Supabase
+    await Supabase.initialize(
+      url: SupabaseConfig.supabaseUrl,
+      anonKey: SupabaseConfig.supabaseAnonKey,
+      authOptions: const FlutterAuthClientOptions(
+        authFlowType: AuthFlowType.pkce,
+      ),
+    );
 
-  // Run app with async error handling
-  runZonedGuarded(
-    () => runApp(const ProviderScope(child: ProviderApp())),
-    (error, stack) {
-      debugPrint('Async Error: $error');
-      debugPrint('Stack trace: $stack');
-    },
-  );
+    // Run app
+    runApp(const ProviderScope(child: ProviderApp()));
+  }, (error, stack) {
+    debugPrint('Async Error: $error');
+    debugPrint('Stack trace: $stack');
+  });
 }
 
 class ProviderApp extends ConsumerWidget {

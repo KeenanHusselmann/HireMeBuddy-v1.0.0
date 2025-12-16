@@ -23,28 +23,31 @@ class ProviderService {
       logger.debug('ProviderService: Skills: $skills');
       logger.debug('ProviderService: Hourly rate: $hourlyRate');
       
-      // First, ensure the profile exists in the profiles table and update name fields
-      logger.debug('ProviderService: Checking if profile exists in profiles table...');
-      final profileCheck = await _supabase
-          .from('profiles')
-          .select('id, role, full_name')
-          .eq('id', userId)
-          .maybeSingle();
-      
-      if (profileCheck == null) {
-        logger.error('ProviderService: ERROR - Profile not found! User must complete signup first.', Exception('Profile not found'));
-        throw Exception('User profile not found. Please ensure you are logged in.');
-      }
-      
-      // Update role to provider and update name fields
-      logger.debug('ProviderService: Updating user role to provider and name fields...');
-      await _supabase.from('profiles').update({
+      // Ensure profile exists (upsert on user_id to avoid conflicts) and sync id=user_id
+      logger.debug('ProviderService: Ensuring profile exists for $userId via upsert on user_id...');
+      await _supabase.from('profiles').upsert({
+        'id': userId,
+        'user_id': userId,
         'role': 'provider',
         'first_name': firstName,
         'last_name': lastName,
         'full_name': '$firstName $lastName',
+        'created_at': DateTime.now().toIso8601String(),
         'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', userId);
+      }, onConflict: 'user_id');
+
+      // Re-check to ensure the profile row now exists before inserting provider_profiles (FK safety)
+      final profileEnsure = await _supabase
+          .from('profiles')
+          .select('id')
+          .or('id.eq.$userId,user_id.eq.$userId')
+          .maybeSingle();
+
+      if (profileEnsure == null) {
+        throw Exception('Profile row still missing for $userId after ensure step');
+      }
+
+      logger.debug('ProviderService: User profile updated/ensured');
       logger.debug('ProviderService: User profile updated');
       
       // Now create the provider profile - pending verification by admin
@@ -118,6 +121,7 @@ class ProviderService {
     required String categoryId,
     required String description,
     required double basePrice,
+    String rateType = 'base',
   }) async {
     try {
       logger.debug('ProviderService: Adding service - Provider: $providerId, Category: $categoryId');
@@ -127,6 +131,7 @@ class ProviderService {
         'service_category_id': categoryId,  // Changed from category_id
         'description': description,
         'base_price': basePrice,
+        'rate_type': rateType,
         'is_available': true,
       });
       
