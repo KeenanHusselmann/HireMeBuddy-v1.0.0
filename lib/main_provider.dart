@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'core/config/supabase_config.dart';
 import 'core/config/provider_router.dart';
+import 'shared/services/notification_service.dart';
+import 'shared/services/push_notification_service.dart';
 
 Future<void> main() async {
   // Keep everything in the same zone to avoid zone mismatch errors
@@ -21,7 +24,10 @@ Future<void> main() async {
       dotenv.testLoad(fileInput: '');
     }
 
-    // Initialize Supabase
+    // Initialize Firebase
+    await Firebase.initializeApp();
+
+    // Initialize Supabase early so services that rely on it can use `Supabase.instance`
     await Supabase.initialize(
       url: SupabaseConfig.supabaseUrl,
       anonKey: SupabaseConfig.supabaseAnonKey,
@@ -29,6 +35,11 @@ Future<void> main() async {
         authFlowType: AuthFlowType.pkce,
       ),
     );
+
+    // Initialize push + local notifications
+    await NotificationService().initialize();
+    await PushNotificationService().init();
+
 
     // Run app
     runApp(const ProviderScope(child: ProviderApp()));

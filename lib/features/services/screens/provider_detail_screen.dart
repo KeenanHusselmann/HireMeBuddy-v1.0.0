@@ -28,7 +28,7 @@ class ProviderDetailScreen extends ConsumerWidget {
     final skills = (provider['skills'] as List<dynamic>?)?.cast<String>() ?? [];
     final bio = provider['bio'] as String?;
 
-    String _capitalizeWords(String text) {
+    String capitalizeWords(String text) {
       return text
           .split(' ')
           .map((word) =>
@@ -353,7 +353,7 @@ class ProviderDetailScreen extends ConsumerWidget {
                                           children: [
                                             Expanded(
                                               child: Text(
-                                                _capitalizeWords(category?['name'] ?? 'Service'),
+                                                capitalizeWords(category?['name'] ?? 'Service'),
                                                 style: const TextStyle(fontWeight: FontWeight.bold),
                                               ),
                                             ),

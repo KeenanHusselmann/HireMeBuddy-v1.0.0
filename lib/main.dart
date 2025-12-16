@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'core/config/supabase_config.dart';
 import 'core/config/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/providers/theme_provider.dart';
 import 'shared/services/notification_service.dart';
+import 'shared/services/push_notification_service.dart';
 
 void main() async {
   // Set up global error handlers BEFORE initializing bindings
@@ -28,6 +30,13 @@ void main() async {
     // Initialize dotenv with empty map to prevent NotInitializedError
     dotenv.testLoad(fileInput: '');
   }
+
+  // Initialize Firebase (for FCM, analytics, etc.)
+  await Firebase.initializeApp();
+
+  // Initialize push + local notifications
+  await NotificationService().initialize();
+  await PushNotificationService().init();
 
   // Initialize Supabase with real-time enabled
   await Supabase.initialize(

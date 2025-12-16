@@ -11,6 +11,10 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # Firebase (core + push messaging)
+  firebase_core: ^3.8.0
+  firebase_messaging: ^15.1.3
+
   # UI & Icons
   cupertino_icons: ^1.0.8
   flutter_svg: ^2.0.10
