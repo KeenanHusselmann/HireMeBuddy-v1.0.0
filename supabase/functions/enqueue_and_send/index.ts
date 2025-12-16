@@ -94,6 +94,26 @@ serve(async (req) => {
     if (!sr || !supabaseUrl) throw new Error('SUPABASE_SERVICE_ROLE_KEY or SUPABASE_URL not set');
     const headers = { 'apikey': sr, 'Authorization': `Bearer ${sr}` } as Record<string,string>;
 
+    // Authenticate caller: require Authorization header from client and validate with Supabase
+    const callerAuth = req.headers.get('authorization') || req.headers.get('Authorization');
+    if (!callerAuth) {
+      return new Response(JSON.stringify({ ok: false, error: 'Missing Authorization header' }), { status: 401 });
+    }
+    try {
+      const userResp = await fetch(`${supabaseUrl.replace(/\/$/,'')}/auth/v1/user`, { headers: { Authorization: callerAuth } });
+      if (!userResp.ok) {
+        const txt = await userResp.text();
+        __DEBUG.push(`auth check failed: ${userResp.status} ${txt}`);
+        return new Response(JSON.stringify({ ok: false, error: 'Invalid auth token' }), { status: 401 });
+      }
+      // optionally parse user if needed
+      const userJson = await userResp.json();
+      __DEBUG.push(`caller authenticated: ${userJson?.id || 'unknown'}`);
+    } catch (e) {
+      __DEBUG.push(`auth check error: ${String(e)}`);
+      return new Response(JSON.stringify({ ok: false, error: 'Auth check failed' }), { status: 401 });
+    }
+
     // fetch active device tokens for recipient
     const tokensUrl = `${supabaseUrl.replace(/\/$/,'')}/rest/v1/device_tokens?select=*&user_id=eq.${recipientId}&is_active=eq.true`;
     __DEBUG.push(`tokensUrl=${tokensUrl}`);
