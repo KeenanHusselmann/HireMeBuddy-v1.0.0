@@ -76,8 +76,40 @@ async function getAccessToken(sa: any) {
 }
 
 async function sendFcm(accessToken: string, projectId: string, token: string, notification: any, data?: Record<string,string>) {
-  const body: any = { message: { token, notification } };
-  if (data) body.message.data = data;
+  // Build message ensuring cross-platform system notification display when app is backgrounded.
+  const message: any = {
+    token,
+    notification: {
+      title: notification.title || 'Notification',
+      body: notification.body || ''
+    },
+    android: {
+      priority: 'HIGH',
+      notification: {
+        default_sound: true,
+        default_vibrate_timings: true
+      }
+    },
+    apns: {
+      headers: {
+        // immediate delivery
+        'apns-priority': '10'
+      },
+      payload: {
+        aps: {
+          alert: {
+            title: notification.title || 'Notification',
+            body: notification.body || ''
+          },
+          'content-available': 1
+        }
+      }
+    }
+  };
+
+  if (data) message.data = data;
+
+  const body: any = { message };
   const url = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
   const r = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   if (!r.ok) throw new Error(`fcm send failed: ${await r.text()}`);
