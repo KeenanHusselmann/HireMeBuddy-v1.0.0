@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/utils/logger.dart';
 
 class EarningsData {
   final double todayEarnings;

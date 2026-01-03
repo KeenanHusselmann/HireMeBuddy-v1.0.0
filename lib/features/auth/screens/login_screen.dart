@@ -162,12 +162,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   ),
                   onPressed: isLoading ? null : () {
-                    // TODO: Implement forgot password
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Password reset feature coming soon!'),
-                      ),
-                    );
+                    context.push('/forgot-password');
                   },
                   child: const Text('Forgot Password?', style: TextStyle(fontSize: 12)),
                 ),

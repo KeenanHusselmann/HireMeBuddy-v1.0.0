@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/provider_provider.dart';
+import '../../../core/utils/logger.dart';
 import '../../../shared/models/provider_profile.dart';
 import '../../../shared/services/notification_service.dart';
 import '../../../shared/services/workmanager_notification_service.dart';
@@ -38,7 +39,7 @@ final pendingBookingsCountProvider = StreamProvider.autoDispose<int>((ref) async
   }
   
   final providerId = profile['id'] as String;
-  print('🔴 [BOOKINGS] Setting up real-time stream for provider: $providerId');
+  logger.info('[BOOKINGS] Setting up real-time stream for provider: $providerId');
   
   await for (final bookings in supabase
       .from('bookings')
@@ -57,13 +58,13 @@ final pendingBookingsCountProvider = StreamProvider.autoDispose<int>((ref) async
 
 // Real-time provider for unread messages count
 final unreadMessagesCountProvider = StreamProvider.autoDispose<int>((ref) async* {
-  print('🔴 [MESSAGES] Setting up provider unread messages stream...');
+  logger.info('[MESSAGES] Setting up provider unread messages stream...');
   
   final supabase = Supabase.instance.client;
   final userId = supabase.auth.currentUser?.id;
   
   if (userId == null) {
-    print('❌ [MESSAGES] No authenticated user');
+    logger.warning('[MESSAGES] No authenticated user');
     yield 0;
     return;
   }

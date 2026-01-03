@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:path_provider/path_provider.dart';
+import '../../../core/utils/logger.dart';
 import '../../../shared/services/portfolio_service.dart';
 import '../../../shared/widgets/video_player_widget.dart';
 

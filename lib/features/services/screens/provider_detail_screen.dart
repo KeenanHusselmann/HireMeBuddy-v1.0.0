@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../core/utils/logger.dart';
 import '../../../shared/services/review_service.dart';
 import '../../../core/providers/provider_provider.dart';
 import '../../bookings/screens/booking_screen.dart';
@@ -19,8 +20,8 @@ class ProviderDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    print('📱 [PROVIDER_DETAIL] Provider data: ${provider.keys}');
-    print('📱 [PROVIDER_DETAIL] Contact number: ${provider['contact_number']}');
+    logger.debug('[PROVIDER_DETAIL] Provider data keys: ${provider.keys}');
+    logger.debug('[PROVIDER_DETAIL] Contact number: ${provider['contact_number']}');
     
     final profile = provider['profiles'] as Map<String, dynamic>;
     final providerId = profile['id'] as String;
@@ -467,7 +468,7 @@ class ProviderDetailScreen extends ConsumerWidget {
                             }
 
                             if (snapshot.hasError) {
-                              print('❌ Error loading reviews: ${snapshot.error}');
+                              logger.error('Error loading reviews', snapshot.error);
                               return Card(
                                 child: Padding(
                                   padding: const EdgeInsets.all(16),
@@ -737,7 +738,7 @@ class ProviderDetailScreen extends ConsumerWidget {
         'completedJobs': completedJobsResponse.count,
       };
     } catch (e) {
-      print('Error getting provider stats: $e');
+      logger.error('Error getting provider stats', e);
       return {
         'avgRating': 0.0,
         'reviewCount': 0,
@@ -751,7 +752,7 @@ class ProviderDetailScreen extends ConsumerWidget {
     final phoneNumber = profile['contact_number'] as String?;
     final providerName = profile['full_name'] as String? ?? 'Provider';
     
-    print('📞 [CONTACT] Using phone number: $phoneNumber');
+    logger.debug('[CONTACT] Using phone number: $phoneNumber');
 
     showModalBottomSheet(
       context: context,
@@ -794,7 +795,7 @@ class ProviderDetailScreen extends ConsumerWidget {
                       Navigator.pop(context);
                       final cleanPhone = phoneNumber.replaceAll(RegExp(r'[^\d]'), '');
                       final whatsappUrl = 'whatsapp://send?phone=$cleanPhone';
-                      print('📱 Opening WhatsApp URL: $whatsappUrl');
+                      logger.debug('Opening WhatsApp URL: $whatsappUrl');
                       if (await canLaunchUrl(Uri.parse(whatsappUrl))) {
                         await launchUrl(Uri.parse(whatsappUrl), mode: LaunchMode.externalApplication);
                       } else {

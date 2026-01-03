@@ -249,7 +249,7 @@ class _VideoCardState extends State<VideoCard> {
     final description = widget.video['description'] as String?;
     final providerId = widget.video['provider_id'] as String;
     
-    print('🎥 VIDEO CARD: Provider $providerName - Available: $isAvailable');
+    logger.debug('VIDEO CARD: Provider $providerName - Available: $isAvailable');
 
     return VisibilityDetector(
       key: Key('video_${widget.video['id']}'),
@@ -424,7 +424,7 @@ class _VideoCardState extends State<VideoCard> {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: () {
-                          print('📲 Navigating with is_available: $isAvailable');
+                          logger.debug('Navigating with is_available: $isAvailable');
                           // Navigate to provider detail screen with provider data
                           context.push(
                             '/provider-detail/$providerId',

@@ -15,13 +15,19 @@ class AuthService {
   // Check if user is logged in
   bool get isLoggedIn => _supabase.auth.currentUser != null;
 
-  // TODO: Implement email verification
   // Send email verification
   Future<void> sendEmailVerification() async {
     try {
+      final user = currentUser;
+      if (user == null) throw Exception('No user logged in');
+      
       // Supabase automatically sends verification email on signup
-      // This method is a placeholder for future custom implementation
-      _logger.info('Email verification sent');
+      // This forces a resend of the verification email
+      await _supabase.auth.resend(
+        type: OtpType.signup,
+        email: user.email!,
+      );
+      _logger.info('Email verification sent to: ${user.email}');
     } catch (e) {
       _logger.error('Error sending email verification', e);
       rethrow;
@@ -34,7 +40,10 @@ class AuthService {
       final user = currentUser;
       if (user == null) throw Exception('No user logged in');
       
-      // TODO: Implement email resend logic
+      await _supabase.auth.resend(
+        type: OtpType.signup,
+        email: user.email!,
+      );
       _logger.info('Verification email resent to: ${user.email}');
     } catch (e) {
       _logger.error('Error resending verification email', e);
@@ -44,6 +53,36 @@ class AuthService {
 
   // Check if email is verified
   bool get isEmailVerified => currentUser?.emailConfirmedAt != null;
+
+  // Request password reset email
+  Future<void> resetPassword(String email) async {
+    try {
+      await _supabase.auth.resetPasswordForEmail(
+        email,
+        redirectTo: 'hiremebuddy://reset-password',
+      );
+      _logger.info('Password reset email sent to: $email');
+    } catch (e) {
+      _logger.error('Error sending password reset email', e);
+      rethrow;
+    }
+  }
+
+  // Update password (after reset)
+  Future<void> updatePassword(String newPassword) async {
+    try {
+      final response = await _supabase.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+      if (response.user == null) {
+        throw Exception('Failed to update password');
+      }
+      _logger.info('Password updated successfully');
+    } catch (e) {
+      _logger.error('Error updating password', e);
+      rethrow;
+    }
+  }
 
   // Sign up with email and password
   Future<AuthResponse> signUp({

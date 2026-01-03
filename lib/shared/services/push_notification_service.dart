@@ -74,7 +74,14 @@ class PushNotificationService {
   Future<void> _saveTokenToSupabase(String? token) async {
     if (token == null) return;
     try {
-      final client = Supabase.instance.client;
+      SupabaseClient client;
+      try {
+        client = Supabase.instance.client;
+      } catch (e) {
+        _logger.warning('Supabase not initialized yet — deferring token save');
+        return;
+      }
+
       final user = client.auth.currentUser;
       if (user == null) {
         _logger.warning('Cannot save FCM token: no authenticated user');

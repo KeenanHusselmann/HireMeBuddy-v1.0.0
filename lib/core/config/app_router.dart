@@ -6,6 +6,8 @@ import '../providers/auth_provider.dart';
 import '../../features/auth/screens/splash_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/signup_screen.dart';
+import '../../features/auth/screens/forgot_password_screen.dart';
+import '../../features/auth/screens/email_verification_screen.dart';
 import '../../features/services/screens/home_screen.dart';
 import '../../features/services/screens/service_list_screen.dart';
 import '../../features/services/screens/provider_detail_screen.dart';
@@ -166,6 +168,16 @@ class AppRouter {
           path: '/signup',
           name: 'signup',
           builder: (context, state) => const SignupScreen(),
+        ),
+        GoRoute(
+          path: '/forgot-password',
+          name: 'forgot-password',
+          builder: (context, state) => const ForgotPasswordScreen(),
+        ),
+        GoRoute(
+          path: '/verify-email',
+          name: 'verify-email',
+          builder: (context, state) => const EmailVerificationScreen(),
         ),
 
         // Services

@@ -2,6 +2,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/providers/provider_provider.dart';
+import '../../../core/utils/logger.dart';
 import '../../../shared/services/provider_service.dart';
 import '../../../shared/services/review_service.dart';
 import '../../bookings/screens/booking_screen.dart';
@@ -10,11 +11,11 @@ import 'provider_detail_screen.dart';
 // Provider for fetching all providers (fallback for initial load)
 final allProvidersProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final providerService = ProviderService();
-  print('ServiceListScreen: Fetching all providers...');
+  logger.debug('ServiceListScreen: Fetching all providers...');
   final providers = await providerService.getAllProviders();
-  print('ServiceListScreen: Fetched ${providers.length} providers');
+  logger.debug('ServiceListScreen: Fetched ${providers.length} providers');
   if (providers.isNotEmpty) {
-    print('ServiceListScreen: First provider: ${providers[0]}');
+    logger.debug('ServiceListScreen: First provider: ${providers[0]}');
   }
   return providers;
 });
@@ -328,7 +329,7 @@ class _ServiceListScreenState extends ConsumerState<ServiceListScreen> with Sing
       body: SafeArea(
         child: providersAsync.when(
           data: (providers) {
-          print('ServiceListScreen: Rendering with ${providers.length} providers');
+          logger.debug('ServiceListScreen: Rendering with ${providers.length} providers');
           
           if (providers.isEmpty) {
             return const Center(
@@ -660,8 +661,7 @@ class _ServiceListScreenState extends ConsumerState<ServiceListScreen> with Sing
       },
       loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) {
-          print('ServiceListScreen: Error loading providers: $error');
-          print('ServiceListScreen: Stack trace: $stack');
+          logger.error('ServiceListScreen: Error loading providers', error, stack);
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -716,7 +716,7 @@ class _ServiceListScreenState extends ConsumerState<ServiceListScreen> with Sing
         'completedJobs': completedJobsResponse.count,
       };
     } catch (e) {
-      print('Error getting provider stats: $e');
+      logger.error('Error getting provider stats', e);
       return {
         'avgRating': 0.0,
         'reviewCount': 0,
