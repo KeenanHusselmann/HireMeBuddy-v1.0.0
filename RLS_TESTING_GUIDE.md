@@ -81,6 +81,18 @@ This document outlines the testing procedures for verifying Row Level Security (
 - ✅ Providers can manage their own portfolio
 - ✅ Cannot delete others' portfolio items
 
+### 11. **notification_queue** table (Backend-Only)
+- ✅ No user access (system-only table)
+- ✅ All operations return empty/fail for users
+- ✅ Service role can access for background processing
+- ✅ Users should use 'notifications' table instead
+
+### 12. **device_tokens** table
+- ✅ Users can only see their own device tokens
+- ✅ Users can register their own device tokens
+- ✅ Users can update/delete their own tokens
+- ✅ Cannot access other users' device tokens
+
 ---
 
 ## 🧪 Testing Methods
