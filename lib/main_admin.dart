@@ -5,9 +5,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'shared/services/notification_service.dart';
-import 'shared/services/push_notification_service.dart';
 import 'core/config/supabase_config.dart';
 import 'features/admin/screens/admin_login_screen.dart';
 import 'features/admin/screens/admin_dashboard_screen.dart';
@@ -30,13 +27,6 @@ void main() async {
     debugPrint('Flutter Error: ${details.exception}');
     debugPrint('Stack trace: ${details.stack}');
   };
-
-  // Initialize Firebase
-  await Firebase.initializeApp();
-
-  // Initialize push + local notifications
-  await NotificationService().initialize();
-  await PushNotificationService().init();
 
   // Initialize Supabase
   await Supabase.initialize(

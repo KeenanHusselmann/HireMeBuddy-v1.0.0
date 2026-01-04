@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/utils/password_validator.dart';
 
 class ProviderSignupScreen extends ConsumerStatefulWidget {
   const ProviderSignupScreen({super.key});
@@ -22,8 +23,45 @@ class _ProviderSignupScreenState extends ConsumerState<ProviderSignupScreen> {
   bool _obscureConfirmPassword = true;
   bool _agreedToTerms = false;
 
+  // Password requirement states
+  bool _hasMinLength = false;
+  bool _hasUppercase = false;
+  bool _hasLowercase = false;
+  bool _hasDigit = false;
+  bool _hasSpecialChar = false;
+  bool _passwordsMatch = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _passwordController.addListener(_validatePasswordRequirements);
+    _confirmPasswordController.addListener(_checkPasswordMatch);
+  }
+
+  void _validatePasswordRequirements() {
+    final password = _passwordController.text;
+    setState(() {
+      _hasMinLength = password.length >= 8;
+      _hasUppercase = password.contains(RegExp(r'[A-Z]'));
+      _hasLowercase = password.contains(RegExp(r'[a-z]'));
+      _hasDigit = password.contains(RegExp(r'[0-9]'));
+      _hasSpecialChar = password.contains(RegExp(r'[!@#\$%^&*(),.?":{}|<>]'));
+    });
+    _checkPasswordMatch();
+  }
+
+  void _checkPasswordMatch() {
+    setState(() {
+      _passwordsMatch = _passwordController.text.isNotEmpty &&
+          _confirmPasswordController.text.isNotEmpty &&
+          _passwordController.text == _confirmPasswordController.text;
+    });
+  }
+
   @override
   void dispose() {
+    _passwordController.removeListener(_validatePasswordRequirements);
+    _confirmPasswordController.removeListener(_checkPasswordMatch);
     _firstNameController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();
@@ -267,19 +305,65 @@ class _ProviderSignupScreenState extends ConsumerState<ProviderSignupScreen> {
                                   ),
                                   onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                                 ),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(
+                                    color: _passwordsMatch ? Colors.green : Colors.grey,
+                                    width: _passwordsMatch ? 2 : 1,
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(
+                                    color: _passwordsMatch ? Colors.green : Colors.grey,
+                                    width: _passwordsMatch ? 2 : 1,
+                                  ),
+                                ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide(color: Colors.deepOrange.shade600, width: 2),
+                                  borderSide: BorderSide(
+                                    color: _passwordsMatch ? Colors.green : Colors.deepOrange.shade600,
+                                    width: 2,
+                                  ),
                                 ),
                                 contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
                               ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) return 'Required';
-                                if (value.length < 6) return 'Min 6 characters';
-                                return null;
-                              },
+                              validator: PasswordValidator.validate,
                               enabled: !isLoading,
+                            ),
+                            const SizedBox(height: 12),
+
+                            // Password Requirements Card
+                            Card(
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                side: BorderSide(
+                                  color: Colors.grey.shade300,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Password Requirements:',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    _buildRequirement('At least 8 characters', _hasMinLength),
+                                    _buildRequirement('One uppercase letter (A-Z)', _hasUppercase),
+                                    _buildRequirement('One lowercase letter (a-z)', _hasLowercase),
+                                    _buildRequirement('One number (0-9)', _hasDigit),
+                                    _buildRequirement('One special character (!@#\$%^&*)', _hasSpecialChar),
+                                  ],
+                                ),
+                              ),
                             ),
                             const SizedBox(height: 12),
 
@@ -298,17 +382,39 @@ class _ProviderSignupScreenState extends ConsumerState<ProviderSignupScreen> {
                                   onPressed: () =>
                                       setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
                                 ),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(
+                                    color: _confirmPasswordController.text.isEmpty
+                                        ? Colors.grey
+                                        : (_passwordsMatch ? Colors.green : Colors.red),
+                                    width: _confirmPasswordController.text.isEmpty ? 1 : 2,
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(
+                                    color: _confirmPasswordController.text.isEmpty
+                                        ? Colors.grey
+                                        : (_passwordsMatch ? Colors.green : Colors.red),
+                                    width: _confirmPasswordController.text.isEmpty ? 1 : 2,
+                                  ),
+                                ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide(color: Colors.deepOrange.shade600, width: 2),
+                                  borderSide: BorderSide(
+                                    color: _confirmPasswordController.text.isEmpty
+                                        ? Colors.deepOrange.shade600
+                                        : (_passwordsMatch ? Colors.green : Colors.red),
+                                    width: 2,
+                                  ),
                                 ),
                                 contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
                               ),
-                              validator: (value) {
-                                if (value != _passwordController.text) return 'Passwords do not match';
-                                return null;
-                              },
+                              validator: (value) => PasswordValidator.validateConfirmPassword(
+                                value,
+                                _passwordController.text,
+                              ),
                               enabled: !isLoading,
                             ),
                             const SizedBox(height: 16),
@@ -440,4 +546,30 @@ class _ProviderSignupScreenState extends ConsumerState<ProviderSignupScreen> {
       ],
     );
   }
-}
+
+  // Helper method to build each requirement row
+  Widget _buildRequirement(String text, bool isMet) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(
+            isMet ? Icons.check_circle : Icons.cancel,
+            size: 18,
+            color: isMet ? Colors.green : Colors.grey.shade400,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 12,
+                color: isMet ? Colors.green.shade700 : Colors.grey.shade600,
+                fontWeight: isMet ? FontWeight.w500 : FontWeight.normal,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }}

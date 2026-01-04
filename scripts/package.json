@@ -1,0 +1,12 @@
+{
+  "name": "fcm-test-tool",
+  "version": "1.0.0",
+  "description": "FCM testing tool for HireMeBuddy",
+  "main": "test_fcm_notifications.js",
+  "scripts": {
+    "test": "node test_fcm_notifications.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}

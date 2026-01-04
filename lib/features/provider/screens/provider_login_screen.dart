@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../shared/widgets/app_logo.dart';
+import '../../../core/utils/logger.dart';
 
 class ProviderLoginScreen extends ConsumerStatefulWidget {
   const ProviderLoginScreen({super.key});
@@ -27,7 +28,7 @@ class _ProviderLoginScreenState extends ConsumerState<ProviderLoginScreen> {
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
-    print('Provider Login: Attempting login with ${_emailController.text.trim()}');
+    logger.debug('Provider login attempt: ${AppLogger.sanitizeEmail(_emailController.text.trim())}');
     
     final authNotifier = ref.read(authStateProvider.notifier);
     final success = await authNotifier.signIn(
@@ -35,17 +36,15 @@ class _ProviderLoginScreenState extends ConsumerState<ProviderLoginScreen> {
       password: _passwordController.text,
     );
 
-    print('Provider Login: Success = $success');
-
     if (success && mounted) {
       // Invalidate the user profile cache to force refresh with current user's data
       ref.invalidate(userProfileProvider);
       
-      print('Provider Login: Navigating to dashboard');
+      logger.info('Provider login successful, navigating to dashboard');
       context.go('/provider-dashboard');
     } else if (mounted) {
       final errorMessage = ref.read(authStateProvider).errorMessage;
-      print('Provider Login: Error = $errorMessage');
+      logger.warning('Provider login failed: $errorMessage');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(errorMessage ?? 'Login failed', style: const TextStyle(fontSize: 13)),
@@ -194,7 +193,28 @@ class _ProviderLoginScreenState extends ConsumerState<ProviderLoginScreen> {
                               },
                               enabled: !isLoading,
                             ),
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 4),
+
+                            // Forgot Password
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                ),
+                                onPressed: isLoading ? null : () {
+                                  context.push('/forgot-password');
+                                },
+                                child: Text(
+                                  'Forgot Password?',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.deepOrange.shade600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
 
                             // Login Button
                             ElevatedButton(

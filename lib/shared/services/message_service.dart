@@ -1,10 +1,12 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/message.dart';
 import '../../core/utils/logger.dart';
+import 'fcm_trigger_service.dart';
 
 class MessageService {
   final _supabase = Supabase.instance.client;
   final _logger = AppLogger();
+  final _fcmTrigger = FcmTriggerService();
 
   // Send a message
   Future<Message> sendMessage({
@@ -16,10 +18,10 @@ class MessageService {
       final user = _supabase.auth.currentUser;
       if (user == null) throw Exception('User not authenticated');
 
-      // Get sender profile ID
+      // Get sender profile ID and name
       final senderProfile = await _supabase
           .from('profiles')
-          .select('id')
+          .select('id, full_name')
           .eq('user_id', user.id)
           .single();
       
@@ -44,7 +46,20 @@ class MessageService {
           .single();
 
       _logger.info('Message sent successfully');
-      return Message.fromJson(response);
+      
+      // Trigger FCM notification to receiver
+      final message = Message.fromJson(response);
+      final senderName = senderProfile['full_name'] ?? 'Someone';
+      
+      _fcmTrigger.notifyNewMessage(
+        recipientProfileId: receiverId,
+        senderName: senderName,
+        messageContent: content,
+        messageId: message.id,
+        conversationId: conversationId,
+      );
+      
+      return message;
     } catch (e) {
       _logger.error('Error sending message', e);
       rethrow;

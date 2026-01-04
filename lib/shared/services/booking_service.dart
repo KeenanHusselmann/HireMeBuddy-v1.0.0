@@ -3,9 +3,11 @@ import '../../core/utils/logger.dart';
 import '../models/booking.dart';
 import '../models/booking_with_client.dart';
 import '../models/booking_with_provider.dart';
+import 'fcm_trigger_service.dart';
 
 class BookingService {
   final _supabase = Supabase.instance.client;
+  final _fcmTrigger = FcmTriggerService();
 
   Future<Booking> createBooking({
     required String providerId,
@@ -25,10 +27,10 @@ class BookingService {
         throw Exception('User not authenticated');
       }
 
-      // Get the profile ID from profiles table
+      // Get the profile ID and name from profiles table
       final profileResponse = await _supabase
           .from('profiles')
-          .select('id')
+          .select('id, full_name')
           .eq('user_id', user.id)
           .single();
 
@@ -52,7 +54,11 @@ class BookingService {
       }).select().single();
 
       logger.info('BookingService: Booking created successfully');
-      return Booking.fromJson(response);
+      
+      // Database trigger will send notification automatically
+      final booking = Booking.fromJson(response);
+      
+      return booking;
     } catch (e) {
       logger.error('BookingService: Error creating booking', e);
       rethrow;
@@ -348,6 +354,38 @@ class BookingService {
       logger.info('BookingService: Cancelled booking $bookingId');
     } catch (e) {
       logger.error('BookingService: Error cancelling booking', e);
+      rethrow;
+    }
+  }
+
+  /// Get all booked time slots for a provider (for calendar availability)
+  Future<List<Map<String, dynamic>>> getProviderBookedSlots(String providerId) async {
+    try {
+      // Fetch all bookings for debugging - temporarily show all statuses and dates
+      final response = await _supabase
+          .from('bookings')
+          .select('booking_date, booking_time, duration_hours, status')
+          .eq('provider_id', providerId)
+          .order('booking_date', ascending: true);
+
+      logger.info('BookingService: Fetched ${response.length} total bookings for provider $providerId');
+      for (var booking in response) {
+        logger.info('  -> ${booking['booking_date']} ${booking['booking_time']} (${booking['duration_hours']}h) - ${booking['status']}');
+      }
+      
+      // Filter to only show future bookings with active statuses for calendar
+      final today = DateTime.now().toIso8601String().split('T')[0];
+      final filteredBookings = (response as List).where((booking) {
+        final bookingDate = booking['booking_date'] as String;
+        final status = booking['status'] as String;
+        return bookingDate.compareTo(today) >= 0 && 
+               (status == 'pending' || status == 'accepted' || status == 'in_progress' || status == 'confirmed');
+      }).toList();
+      
+      logger.info('BookingService: After filtering: ${filteredBookings.length} active future bookings');
+      return filteredBookings.cast<Map<String, dynamic>>();
+    } catch (e) {
+      logger.error('BookingService: Error fetching provider booked slots', e);
       rethrow;
     }
   }

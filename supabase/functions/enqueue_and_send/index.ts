@@ -60,13 +60,21 @@ async function getAccessToken(sa: any) {
 }
 
 async function sendFcmDirect(accessToken: string, projectId: string, token: string, notification: any, data?: Record<string,string>) {
+  // Merge notification.type into data payload for deep linking
+  const fcmData = data ? { ...data } : {};
+  if (notification.type) {
+    fcmData.type = notification.type;
+  }
+  
   const message: any = {
     token,
     notification: { title: notification.title || 'Notification', body: notification.body || '' },
     android: { priority: 'HIGH', notification: { default_sound: true } },
     apns: { headers: { 'apns-priority': '10' }, payload: { aps: { alert: { title: notification.title || 'Notification', body: notification.body || '' }, 'content-available': 1 } } }
   };
-  if (data) message.data = data;
+  // Always include data even if empty to ensure type is present
+  message.data = fcmData;
+  
   const body = { message };
   const url = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
   const r = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -83,6 +91,9 @@ serve(async (req) => {
     const recipientId: string = body.recipient_id;
     const message_payload = body.message_payload || { title: 'Notification', body: '' };
     const data = body.data;
+    __DEBUG.push(`recipientId from body: ${recipientId}`);
+    __DEBUG.push(`body keys: ${Object.keys(body).join(', ')}`);
+    __DEBUG.push(`full body: ${JSON.stringify(body)}`);
     if (!recipientId) return new Response(JSON.stringify({ ok: false, error: 'recipient_id required' }), { status: 400 });
 
     const sa = loadServiceAccount();
@@ -97,21 +108,53 @@ serve(async (req) => {
     // Authenticate caller: require Authorization header from client and validate with Supabase
     const callerAuth = req.headers.get('authorization') || req.headers.get('Authorization');
     if (!callerAuth) {
-      return new Response(JSON.stringify({ ok: false, error: 'Missing Authorization header' }), { status: 401 });
+      return new Response(JSON.stringify({ ok: false, error: 'Missing Authorization header' }), { 
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
-    try {
-      const userResp = await fetch(`${supabaseUrl.replace(/\/$/,'')}/auth/v1/user`, { headers: { Authorization: callerAuth } });
-      if (!userResp.ok) {
-        const txt = await userResp.text();
-        __DEBUG.push(`auth check failed: ${userResp.status} ${txt}`);
-        return new Response(JSON.stringify({ ok: false, error: 'Invalid auth token' }), { status: 401 });
+    
+    // Validate input parameters
+    if (!recipientId || typeof recipientId !== 'string') {
+      return new Response(JSON.stringify({ ok: false, error: 'Invalid recipient_id' }), { 
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
+    if (!message_payload || typeof message_payload !== 'object') {
+      return new Response(JSON.stringify({ ok: false, error: 'Invalid message_payload' }), { 
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
+    // Check if caller is using service role key (skip user auth check)
+    const isServiceRole = callerAuth.includes(sr);
+    if (!isServiceRole) {
+      // Validate as user token
+      try {
+        const userResp = await fetch(`${supabaseUrl.replace(/\/$/,'')}/auth/v1/user`, { headers: { Authorization: callerAuth } });
+        if (!userResp.ok) {
+          const txt = await userResp.text();
+          __DEBUG.push(`auth check failed: ${userResp.status} ${txt}`);
+          return new Response(JSON.stringify({ ok: false, error: 'Invalid auth token' }), { 
+            status: 401,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+        // optionally parse user if needed
+        const userJson = await userResp.json();
+        __DEBUG.push(`caller authenticated: ${userJson?.id || 'unknown'}`);
+      } catch (e) {
+        __DEBUG.push(`auth check error: ${String(e)}`);
+        return new Response(JSON.stringify({ ok: false, error: 'Auth check failed' }), { 
+          status: 401,
+          headers: { 'Content-Type': 'application/json' }
+        });
       }
-      // optionally parse user if needed
-      const userJson = await userResp.json();
-      __DEBUG.push(`caller authenticated: ${userJson?.id || 'unknown'}`);
-    } catch (e) {
-      __DEBUG.push(`auth check error: ${String(e)}`);
-      return new Response(JSON.stringify({ ok: false, error: 'Auth check failed' }), { status: 401 });
+    } else {
+      __DEBUG.push('caller authenticated with service role key');
     }
 
     // fetch active device tokens for recipient

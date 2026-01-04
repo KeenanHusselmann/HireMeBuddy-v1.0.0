@@ -12,6 +12,7 @@ import 'bookings_management_screen.dart';
 import 'services_management_screen.dart';
 import 'analytics_screen.dart';
 import 'admin_notifications_screen.dart';
+import 'waiting_list_screen.dart';
 
 // Provider for admin unread notifications count
 final adminUnreadNotificationsCountProvider = StreamProvider.autoDispose<int>((ref) async* {
@@ -43,6 +44,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
 
   final List<NavigationItem> _navigationItems = [
     NavigationItem(icon: Icons.dashboard, label: 'Dashboard', route: 'dashboard'),
+    NavigationItem(icon: Icons.list_alt, label: 'Waiting List', route: 'waiting-list'),
     NavigationItem(icon: Icons.people, label: 'Users', route: 'users'),
     NavigationItem(icon: Icons.business_center, label: 'Providers', route: 'providers'),
     NavigationItem(icon: Icons.calendar_today, label: 'Bookings', route: 'bookings'),
@@ -56,16 +58,18 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
       case 0:
         return _DashboardOverview();
       case 1:
-        return const UsersManagementScreen();
+        return const WaitingListScreen();
       case 2:
-        return const ProvidersManagementScreen();
+        return const UsersManagementScreen();
       case 3:
-        return const BookingsManagementScreen();
+        return const ProvidersManagementScreen();
       case 4:
-        return const ServicesManagementScreen();
+        return const BookingsManagementScreen();
       case 5:
-        return AnalyticsView();
+        return const ServicesManagementScreen();
       case 6:
+        return AnalyticsView();
+      case 7:
         return _SettingsView();
       default:
         return _DashboardOverview();

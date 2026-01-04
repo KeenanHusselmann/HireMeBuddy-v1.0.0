@@ -7,6 +7,8 @@ import '../../features/auth/screens/splash_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/signup_screen.dart';
 import '../../features/auth/screens/forgot_password_screen.dart';
+import '../../features/auth/screens/reset_password_screen.dart';
+import '../../features/auth/screens/change_password_screen.dart';
 import '../../features/auth/screens/email_verification_screen.dart';
 import '../../features/services/screens/home_screen.dart';
 import '../../features/services/screens/service_list_screen.dart';
@@ -102,7 +104,10 @@ class AppRouter {
         final authState = ref.read(authStateProvider);
         final isAuthenticated = authState.status == AuthStatus.authenticated;
         final isAuthRoute = state.matchedLocation == '/login' || 
-                           state.matchedLocation == '/signup';
+                           state.matchedLocation == '/signup' ||
+                           state.matchedLocation == '/forgot-password' ||
+                           state.matchedLocation == '/reset-password' ||
+                           state.matchedLocation == '/verify-email';
         final isSplash = state.matchedLocation == '/';
 
         // Skip redirect on splash screen
@@ -137,7 +142,7 @@ class AppRouter {
         }
 
         // Redirect to login if not authenticated and trying to access protected pages
-        if (!isAuthenticated && !isAuthRoute) {
+        if (!isAuthenticated && !isAuthRoute && !isSplash) {
           return '/login';
         }
 
@@ -173,6 +178,16 @@ class AppRouter {
           path: '/forgot-password',
           name: 'forgot-password',
           builder: (context, state) => const ForgotPasswordScreen(),
+        ),
+        GoRoute(
+          path: '/reset-password',
+          name: 'reset-password',
+          builder: (context, state) => const ResetPasswordScreen(),
+        ),
+        GoRoute(
+          path: '/change-password',
+          name: 'change-password',
+          builder: (context, state) => const ChangePasswordScreen(),
         ),
         GoRoute(
           path: '/verify-email',

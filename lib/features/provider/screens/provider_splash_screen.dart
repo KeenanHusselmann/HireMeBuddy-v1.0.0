@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/services/deep_link_handler.dart';
 import '../../../shared/widgets/app_logo.dart';
+import 'provider_bookings_screen.dart';
+import '../../chat/screens/conversations_screen.dart';
 
 class ProviderSplashScreen extends ConsumerStatefulWidget {
   const ProviderSplashScreen({super.key});
@@ -20,6 +23,9 @@ class _ProviderSplashScreenState extends ConsumerState<ProviderSplashScreen>
   @override
   void initState() {
     super.initState();
+    
+    // DON'T register deep link handler in splash - let dashboard handle it
+    // This prevents navigation conflicts when app opens from notification
     
     _controller = AnimationController(
       duration: const Duration(milliseconds: 1500),
@@ -40,9 +46,17 @@ class _ProviderSplashScreenState extends ConsumerState<ProviderSplashScreen>
   }
 
   Future<void> _checkAuthAndNavigate() async {
-    await Future.delayed(const Duration(seconds: 5));
+    await Future.delayed(const Duration(seconds: 2));
 
     if (!mounted) return;
+
+    // Check for pending deep link navigation - if yes, skip auto-navigation
+    if (DeepLinkHandler().hasPendingNavigation) {
+      print('🔗 Splash: Skipping auto-navigation - deep link navigation pending');
+      // Navigate to dashboard immediately so dashboard can handle the deep link
+      context.go('/provider-dashboard');
+      return;
+    }
 
     final authState = ref.read(authStateProvider);
     

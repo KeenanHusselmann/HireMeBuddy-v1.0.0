@@ -555,31 +555,11 @@ class _ProviderBookingsScreenState extends ConsumerState<ProviderBookingsScreen>
                       child: ElevatedButton.icon(
                         onPressed: () async {
                           try {
+                            // Update booking status - database trigger will send notification automatically
                             await ref.read(bookingServiceProvider).updateBookingStatus(
                               booking.id,
                               'confirmed',
                             );
-                            
-                            // Send notification to client using database function
-                            try {
-                              print('📤 Sending notification to client: ${booking.clientId}');
-                              print('   Booking ID: ${booking.id}');
-                              
-                              final result = await Supabase.instance.client.rpc(
-                                'send_notification',
-                                params: {
-                                  'p_user_id': booking.clientId,
-                                  'p_title': 'Booking Accepted',
-                                  'p_body': 'Your booking has been accepted by the provider!',
-                                  'p_type': 'booking_update',
-                                },
-                              );
-                              
-                              print('✅ Acceptance notification sent via RPC: $result');
-                            } catch (e, stack) {
-                              print('❌ Error sending acceptance notification: $e');
-                              print('Stack trace: $stack');
-                            }
                             
                             ref.invalidate(providerBookingsProvider);
                             if (context.mounted) {

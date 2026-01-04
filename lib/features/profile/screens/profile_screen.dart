@@ -266,6 +266,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         title: const Text('My Profile'),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.lock_outline),
+            onPressed: () {
+              Navigator.pushNamed(context, '/change-password');
+            },
+            tooltip: 'Change Password',
+          ),
           if (!_isLoading)
             TextButton(
               onPressed: _isSaving ? null : _saveProfile,

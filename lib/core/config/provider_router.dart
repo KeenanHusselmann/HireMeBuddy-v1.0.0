@@ -11,6 +11,8 @@ import '../../features/provider/screens/provider_registration_screen.dart';
 import '../../features/provider/screens/provider_dashboard_screen.dart';
 import '../../features/provider/screens/add_service_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
+import '../../features/auth/screens/forgot_password_screen.dart';
+import '../../features/auth/screens/reset_password_screen.dart';
 
 /// Helper class to refresh GoRouter when stream changes
 class GoRouterRefreshStream extends ChangeNotifier {
@@ -43,7 +45,9 @@ class ProviderAppRouter {
         final authState = ref.read(authStateProvider);
         final isAuthenticated = authState.status == AuthStatus.authenticated;
         final isAuthRoute = state.matchedLocation == '/provider-login' || 
-                           state.matchedLocation == '/provider-signup';
+                           state.matchedLocation == '/provider-signup' ||
+                           state.matchedLocation == '/forgot-password' ||
+                           state.matchedLocation == '/reset-password';
         final isSplash = state.matchedLocation == '/provider-splash';
         final isRegistration = state.matchedLocation == '/provider-registration';
         final isDashboard = state.matchedLocation == '/provider-dashboard';
@@ -110,6 +114,16 @@ class ProviderAppRouter {
           path: '/provider-signup',
           name: 'provider-signup',
           builder: (context, state) => const ProviderSignupScreen(),
+        ),
+        GoRoute(
+          path: '/forgot-password',
+          name: 'forgot-password',
+          builder: (context, state) => const ForgotPasswordScreen(),
+        ),
+        GoRoute(
+          path: '/reset-password',
+          name: 'reset-password',
+          builder: (context, state) => const ResetPasswordScreen(),
         ),
 
         // Provider Dashboard

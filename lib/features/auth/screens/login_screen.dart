@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../shared/widgets/app_logo.dart';
 
@@ -16,6 +17,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkForPendingPasswordReset();
+  }
+
+  Future<void> _checkForPendingPasswordReset() async {
+    // Check if there's a pending password reset (client-specific keys)
+    final prefs = await SharedPreferences.getInstance();
+    final savedEmail = prefs.getString('client_reset_email');
+    final codeSent = prefs.getBool('client_reset_code_sent') ?? false;
+    
+    print('🔍 Checking for pending reset: email=$savedEmail, codeSent=$codeSent');
+    
+    if (savedEmail != null && codeSent && mounted) {
+      // User was in the middle of resetting password - redirect them back
+      print('✅ Redirecting to forgot password screen');
+      await Future.delayed(const Duration(milliseconds: 100));
+      if (mounted) {
+        context.push('/forgot-password');
+      }
+    }
+  }
 
   @override
   void dispose() {

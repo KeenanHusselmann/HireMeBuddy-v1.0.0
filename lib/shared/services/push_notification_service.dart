@@ -1,7 +1,9 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/utils/logger.dart';
+import '../../core/services/deep_link_handler.dart';
 import 'notification_service.dart';
 
 /// Background message handler (must be a top-level function)
@@ -67,8 +69,50 @@ class PushNotificationService {
     // When user taps a notification and opens the app
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       _logger.debug('FCM message opened app: ${message.messageId}');
-      // You can inspect message.data here to navigate if needed.
+      _handleNotificationTap(message);
     });
+    
+    // Check if app was opened from a terminated state via notification
+    final initialMessage = await _messaging.getInitialMessage();
+    if (initialMessage != null) {
+      _logger.debug('FCM app opened from terminated state: ${initialMessage.messageId}');
+      // Delay navigation slightly to ensure app is fully initialized
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _handleNotificationTap(initialMessage);
+      });
+    }
+  }
+  
+  /// Handle notification tap and navigate to appropriate screen
+  void _handleNotificationTap(RemoteMessage message) {
+    final data = message.data;
+    final type = data['type'] as String?;
+    final bookingId = data['booking_id'] as String?;
+    
+    _logger.info('🔔 Notification tapped: type=$type, bookingId=$bookingId');
+    _logger.info('🔔 Full notification data: $data');
+    
+    // Navigate based on notification type - use DeepLinkHandler for now
+    // It will queue navigation if app not ready
+    switch (type) {
+      case 'booking':  // Match the type from notify_new_booking trigger
+      case 'new_booking':
+      case 'booking_status':
+        // Navigate to bookings screen
+        _logger.info('📍 Navigating to bookings (bookingId: $bookingId)');
+        DeepLinkHandler().navigateToBookings(bookingId: bookingId);
+        break;
+        
+      case 'message':  // Match the type from notify_new_message trigger
+      case 'new_message':
+        // Navigate to messages screen
+        _logger.info('📍 Navigating to messages');
+        DeepLinkHandler().navigateToMessages();
+        break;
+        
+      default:
+        _logger.info('⚠️ Unknown notification type: $type - not navigating');
+    }
   }
 
   Future<void> _saveTokenToSupabase(String? token) async {

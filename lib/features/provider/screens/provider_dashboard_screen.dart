@@ -8,6 +8,7 @@ import '../../../core/utils/logger.dart';
 import '../../../shared/models/provider_profile.dart';
 import '../../../shared/services/notification_service.dart';
 import '../../../shared/services/workmanager_notification_service.dart';
+import '../../../core/services/deep_link_handler.dart';
 import 'provider_bookings_screen.dart';
 import 'provider_earnings_screen.dart';
 import 'provider_portfolio_screen.dart';
@@ -51,7 +52,7 @@ final pendingBookingsCountProvider = StreamProvider.autoDispose<int>((ref) async
     ).toList();
     
     final count = pendingBookings.length;
-    print('🟢 [BOOKINGS] Real-time update: $count pending bookings');
+    logger.debug('[BOOKINGS] Real-time update: $count pending bookings');
     yield count;
   }
 });
@@ -78,7 +79,7 @@ final unreadMessagesCountProvider = StreamProvider.autoDispose<int>((ref) async*
         .single();
     
     final profileId = profile['id'] as String;
-    print('✅ [MESSAGES] Provider profile_id: $profileId');
+    logger.debug('[MESSAGES] Provider profile_id: ${AppLogger.sanitizeUserId(profileId)}');
     
     // Stream unread messages
     await for (final messages in supabase
@@ -106,7 +107,7 @@ final unreadMessagesCountProvider = StreamProvider.autoDispose<int>((ref) async*
       yield messages.length;
     }
   } catch (e) {
-    print('❌ [MESSAGES] Error in provider unread messages stream: $e');
+    logger.error('[MESSAGES] Error in provider unread messages stream', e);
     yield 0;
   }
 });
@@ -134,6 +135,7 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
   void initState() {
     super.initState();
     _initializeNotifications();
+    _registerDeepLinkHandler();
   }
 
   Future<void> _initializeNotifications() async {
@@ -142,10 +144,55 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
       setState(() {
         _notificationsInitialized = true;
       });
-      print('Notifications initialized successfully');
+      logger.info('Notifications initialized successfully');
     } catch (e) {
-      print('Error initializing notifications: $e');
+      logger.error('Error initializing notifications', e);
     }
+  }
+  
+  void _registerDeepLinkHandler() {
+    print('🔗 Dashboard: Registering deep link handler...');
+    print('🔗 Dashboard: Has pending navigation? ${DeepLinkHandler().hasPendingNavigation}');
+    
+    // Register callback to handle deep link navigation from push notifications
+    DeepLinkHandler().registerNavigationCallback((route, {params}) {
+      print('🔗 Dashboard: Deep link navigation requested: $route, params: $params');
+      
+      // Use addPostFrameCallback to ensure navigation happens after build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          logger.warning('Dashboard: Not mounted, skipping navigation');
+          return;
+        }
+        
+        logger.debug('Dashboard: Executing navigation to $route');
+        
+        switch (route) {
+          case 'bookings':
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ProviderBookingsScreen(),
+              ),
+            );
+            logger.info('Dashboard: Navigated to bookings');
+            break;
+            
+          case 'messages':
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ConversationsScreen(),
+              ),
+            );
+            logger.info('Dashboard: Navigated to messages');
+            break;
+            
+          default:
+            logger.warning('Dashboard: Unknown deep link route: $route');
+        }
+      });
+    });
   }
 
   Future<void> _loadProviderId(String userId) async {
@@ -168,20 +215,22 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
         
         // Start WorkManager for periodic background notifications (checks every 15 minutes)
         WorkManagerNotificationService.initialize(_providerId!, 'labourer').then((_) {
-          print('✅ WorkManager background task registered for: $_providerId');
+          logger.info('WorkManager background task registered for provider ${AppLogger.sanitizeUserId(_providerId!)}');
         }).catchError((e) {
-          print('❌ WorkManager initialization error: $e');
+          logger.error('WorkManager initialization error', e);
         });
         
-        print('✅ Subscribed to notifications for: $_providerId');
+        logger.info('Subscribed to notifications for provider');
       }
     } catch (e) {
-      print('Error loading provider ID: $e');
+      logger.error('Error loading provider ID', e);
     }
   }
 
   @override
   void dispose() {
+    // Clear deep link callbacks to prevent memory leaks
+    DeepLinkHandler().clearCallbacks();
     _notificationService.unsubscribeAll();
     super.dispose();
   }

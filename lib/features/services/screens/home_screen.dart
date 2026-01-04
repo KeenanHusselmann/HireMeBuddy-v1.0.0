@@ -7,6 +7,7 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../shared/widgets/app_logo.dart';
 import '../../../shared/services/notification_service.dart';
 import '../../../shared/services/workmanager_notification_service.dart';
+import '../../../core/services/deep_link_handler.dart';
 import '../../bookings/screens/my_bookings_screen.dart';
 import '../widgets/provider_video_feed.dart';
 import '../../chat/screens/conversations_screen.dart';
@@ -112,6 +113,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     _initializeNotifications();
+    _registerDeepLinkHandler();
   }
 
   Future<void> _initializeNotifications() async {
@@ -122,6 +124,51 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (user != null) {
       _loadProfileId(user.id);
     }
+  }
+  
+  void _registerDeepLinkHandler() {
+    print('🔗 Client Home: Registering deep link handler...');
+    print('🔗 Client Home: Has pending navigation? ${DeepLinkHandler().hasPendingNavigation}');
+    
+    // Register callback to handle deep link navigation from push notifications
+    DeepLinkHandler().registerNavigationCallback((route, {params}) {
+      print('🔗 Client Home: Deep link navigation requested: $route, params: $params');
+      
+      // Use addPostFrameCallback to ensure navigation happens after build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          print('🔗 Client Home: Not mounted, skipping navigation');
+          return;
+        }
+        
+        print('🔗 Client Home: Executing navigation to $route');
+        
+        switch (route) {
+          case 'bookings':
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const MyBookingsScreen(),
+              ),
+            );
+            print('🔗 Client Home: Navigated to My Bookings screen');
+            break;
+            
+          case 'messages':
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ConversationsScreen(),
+              ),
+            );
+            print('🔗 Client Home: Navigated to messages screen');
+            break;
+            
+          default:
+            print('⚠️ Unknown deep link route: $route');
+        }
+      });
+    });
   }
 
   Future<void> _loadProfileId(String userId) async {
@@ -156,6 +203,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   void dispose() {
+    // Clear deep link callbacks to prevent memory leaks
+    DeepLinkHandler().clearCallbacks();
     _notificationService.unsubscribeAll();
     super.dispose();
   }

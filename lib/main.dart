@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:app_links/app_links.dart';
 import 'core/config/supabase_config.dart';
 import 'core/config/app_router.dart';
 import 'core/theme/app_theme.dart';
@@ -34,11 +35,7 @@ void main() async {
   // Initialize Firebase (for FCM, analytics, etc.)
   await Firebase.initializeApp();
 
-  // Initialize push + local notifications
-  await NotificationService().initialize();
-  await PushNotificationService().init();
-
-  // Initialize Supabase with real-time enabled
+  // Initialize Supabase FIRST (before push notifications need it)
   await Supabase.initialize(
     url: SupabaseConfig.supabaseUrl,
     anonKey: SupabaseConfig.supabaseAnonKey,
@@ -47,32 +44,110 @@ void main() async {
     ),
   );
 
-  // Run app with async error handling
-  runZonedGuarded(
-    () => runApp(
-      const ProviderScope(
-        child: HireMeBuddyApp(),
-      ),
+  // Initialize push + local notifications AFTER Supabase
+  await NotificationService().initialize();
+  await PushNotificationService().init();
+
+  // Run app
+  runApp(
+    const ProviderScope(
+      child: HireMeBuddyApp(),
     ),
-    (error, stack) {
-      debugPrint('Async Error: $error');
-      debugPrint('Stack trace: $stack');
-    },
   );
 }
 
-class HireMeBuddyApp extends ConsumerWidget {
+class HireMeBuddyApp extends ConsumerStatefulWidget {
   const HireMeBuddyApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HireMeBuddyApp> createState() => _HireMeBuddyAppState();
+}
+
+class _HireMeBuddyAppState extends ConsumerState<HireMeBuddyApp> {
+  late AppLinks _appLinks;
+  StreamSubscription<Uri>? _linkSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _initDeepLinks();
+  }
+
+  Future<void> _initDeepLinks() async {
+    _appLinks = AppLinks();
+
+    // Check for password recovery session on app start
+    _checkForRecoverySession();
+
+    // Handle links when app is already running
+    _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
+      _handleDeepLink(uri);
+    });
+
+    // Handle initial link when app is launched from deep link
+    try {
+      final initialUri = await _appLinks.getInitialLink();
+      if (initialUri != null) {
+        _handleDeepLink(initialUri);
+      }
+    } catch (e) {
+      debugPrint('Error handling initial link: $e');
+    }
+
+    // Also listen to auth state changes for password recovery
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      final event = data.event;
+      debugPrint('Auth event: $event');
+      if (event == AuthChangeEvent.passwordRecovery) {
+        final router = ref.read(AppRouter.provider);
+        router.go('/reset-password');
+      }
+    });
+  }
+
+  Future<void> _checkForRecoverySession() async {
+    // Wait for Supabase to fully initialize
+    await Future.delayed(const Duration(seconds: 2));
+    
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session != null) {
+      final user = session.user;
+      // Check if this is a recovery session
+      final recoveryToken = user.userMetadata?['recovery_token'];
+      final recoverySentAt = session.user.recoverySentAt;
+      
+      debugPrint('Session found: user=${user.email}, recoveryToken=$recoveryToken, recoverySentAt=$recoverySentAt');
+      
+      if (recoveryToken != null || recoverySentAt != null) {
+        debugPrint('Recovery session detected! Navigating to reset password');
+        final router = ref.read(AppRouter.provider);
+        router.go('/reset-password');
+      }
+    } else {
+      debugPrint('No session found on app start');
+    }
+  }
+
+  void _handleDeepLink(Uri uri) {
+    debugPrint('Deep link received: $uri');
+    
+    // Check if it's a password reset link
+    if (uri.host == 'reset-password' || uri.path.contains('reset-password')) {
+      final router = ref.read(AppRouter.provider);
+      router.go('/reset-password');
+    }
+  }
+
+  @override
+  void dispose() {
+    _linkSubscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final router = ref.watch(AppRouter.provider);
     final themeMode = ref.watch(themeModeProvider);
-    
-    // Set up navigation callback for notifications (idempotent)
-    NotificationService.setNavigateToMessagesCallback(() {
-      router.go('/messages');
-    });
     
     return MaterialApp.router(
       title: 'HireMeBuddy',

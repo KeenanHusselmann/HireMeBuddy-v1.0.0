@@ -114,24 +114,17 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Admin Icon
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.admin_panel_settings,
-                            size: 64,
-                            color: const Color(0xFF2C3E50),
-                          ),
+                        // HireMeBuddy Logo
+                        Image.asset(
+                          'assets/images/hiremebuddy-logo.png',
+                          height: 80,
+                          fit: BoxFit.contain,
                         ),
                         const SizedBox(height: 24),
 
                         // Title
                         const Text(
-                          'Admin Portal',
+                          'HireMeBuddy Admin Portal',
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
@@ -242,41 +235,29 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
                         ),
                         const SizedBox(height: 24),
 
-                        // Demo Credentials Info
+                        // Security Notice
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.blue.shade50,
+                            color: Colors.grey.shade50,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.blue.shade200),
+                            border: Border.all(color: Colors.grey.shade300),
                           ),
-                          child: Column(
+                          child: Row(
                             children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.info_outline,
-                                    size: 16,
-                                    color: Colors.blue.shade700,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Demo Credentials',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.blue.shade700,
-                                    ),
-                                  ),
-                                ],
+                              Icon(
+                                Icons.security,
+                                size: 16,
+                                color: Colors.grey.shade700,
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Email: admin@hiremebuddy.com\nPassword: admin123',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.blue.shade900,
-                                  fontFamily: 'monospace',
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Secure admin access. Contact support for credentials.',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade700,
+                                  ),
                                 ),
                               ),
                             ],

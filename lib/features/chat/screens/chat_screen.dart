@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/logger.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../shared/services/message_service.dart';
@@ -115,10 +116,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       final providerId = providerProfile?['id'] as String? ?? widget.provider['id'] as String;
       final content = _messageController.text.trim();
       
-      print('🔵 [CHAT] Sending message:');
-      print('   My Profile ID: $_myProfileId');
-      print('   Provider ID (receiver): $providerId');
-      print('   Content: $content');
+      logger.debug('Sending message: sender=${AppLogger.sanitizeUserId(_myProfileId)}, receiver=${AppLogger.sanitizeUserId(providerId)}');
       
       final sentMessage = await _messageService.sendMessage(
         receiverId: providerId,
@@ -140,7 +138,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       _messageController.clear();
       _scrollToBottom();
     } catch (e) {
-      print('Error sending message: $e');
+      logger.error('Error sending message', e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error sending message: $e')),

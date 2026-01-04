@@ -57,13 +57,30 @@ class AuthService {
   // Request password reset email
   Future<void> resetPassword(String email) async {
     try {
-      await _supabase.auth.resetPasswordForEmail(
-        email,
-        redirectTo: 'hiremebuddy://reset-password',
-      );
+      // Use the site URL configured in Supabase dashboard
+      // This will redirect to the URL configured in Authentication > URL Configuration
+      await _supabase.auth.resetPasswordForEmail(email);
       _logger.info('Password reset email sent to: $email');
     } catch (e) {
       _logger.error('Error sending password reset email', e);
+      rethrow;
+    }
+  }
+
+  // Verify OTP code and create session for password reset
+  Future<void> verifyOtpAndCreateSession(String email, String token) async {
+    try {
+      final response = await _supabase.auth.verifyOTP(
+        type: OtpType.recovery,
+        email: email,
+        token: token,
+      );
+      if (response.session == null) {
+        throw Exception('Failed to create recovery session');
+      }
+      _logger.info('OTP verified successfully for: $email');
+    } catch (e) {
+      _logger.error('Error verifying OTP', e);
       rethrow;
     }
   }
@@ -94,7 +111,8 @@ class AuthService {
     String? phoneNumber,
     String role = 'client', // Default role is client
   }) async {
-    print('AuthService: Starting Supabase signup for $email with role: $role');
+    _logger.info('Starting signup');
+    _logger.debug('Signup details: ${AppLogger.sanitizeEmail(email)}, role: $role');
     
     // Determine full name from firstName and lastName if not provided
     final String nameToUse = fullName ?? '${firstName ?? ''} ${lastName ?? ''}'.trim();
@@ -113,20 +131,11 @@ class AuthService {
         emailRedirectTo: null,
       );
 
-      print('AuthService: Supabase signup response - User: ${response.user?.id}, Session: ${response.session != null}');
-      print('AuthService: User metadata: ${response.user?.userMetadata}');
+      _logger.info('Signup response received: User ${AppLogger.sanitizeUserId(response.user?.id)}, Session: ${response.session != null}');
 
       // Create or update profile in profiles table ONLY if signup succeeded
       if (response.user != null && response.session != null) {
-        print('AuthService: ========================================');
-        print('AuthService: CREATING PROFILE IN profiles TABLE');
-        print('AuthService: User ID: ${response.user!.id}');
-        print('AuthService: Full Name: $nameToUse');
-        print('AuthService: First Name: $firstName');
-        print('AuthService: Last Name: $lastName');
-        print('AuthService: Phone: $phoneNumber');
-        print('AuthService: Role: $role');
-        print('AuthService: ========================================');
+        _logger.info('Creating profile for user ${AppLogger.sanitizeUserId(response.user!.id)} with role: $role');
         
         try {
           // Create profile directly - don't wait for trigger since migrations may not be executed
@@ -135,7 +144,7 @@ class AuthService {
           
           for (int i = 0; i < retries; i++) {
             try {
-              print('AuthService: Attempt ${i + 1}/$retries to create profile...');
+              _logger.debug('Profile creation attempt ${i + 1}/$retries');
               
               // Use upsert to handle both new profiles and updates
               final profileData = {
@@ -153,16 +162,14 @@ class AuthService {
                 profileData['phone'] = phoneNumber;  // Fixed: use 'phone' instead of 'contact_number'
               }
               
-              print('AuthService: Profile data to insert: $profileData');
+              _logger.debug('Inserting profile data for user ${AppLogger.sanitizeUserId(response.user!.id)}');
               
               final insertResult = await _supabase.from('profiles').upsert(
                 profileData,
                 onConflict: 'id',
               ).select();
               
-              print('AuthService: ✅✅✅ INSERT RESULT: $insertResult');
-              print('AuthService: ✅ Profile created/updated successfully');
-              print('AuthService: Profile data - ID: ${response.user!.id}, Name: $nameToUse, Role: $role');
+              _logger.info('Profile created/updated successfully for ${AppLogger.sanitizeName(nameToUse)}');
               
               // Verify the profile was created
               final verify = await _supabase
@@ -172,16 +179,16 @@ class AuthService {
                   .maybeSingle();
               
               if (verify != null) {
-                print('AuthService: ✅ Profile verified in database: ${verify['full_name']} (${verify['role']})');
+                _logger.info('Profile verified: ${AppLogger.sanitizeName(verify['full_name'] as String?)} (${verify['role']})');
               } else {
-                print('AuthService: ⚠️ Profile created but verification failed');
+                _logger.warning('Profile verification failed after creation');
               }
               
               lastError = null;
               break;
             } catch (e) {
               lastError = e is Exception ? e : Exception(e.toString());
-              print('AuthService: ❌ Profile operation attempt ${i + 1}/$retries failed: $e');
+              _logger.warning('Profile operation attempt ${i + 1}/$retries failed', e);
               
               if (i < retries - 1) {
                 // Wait before retry with exponential backoff
@@ -192,23 +199,21 @@ class AuthService {
           
           // If all retries failed, this is a critical error
           if (lastError != null) {
-            print('AuthService: CRITICAL - Profile creation failed after $retries attempts');
-            print('AuthService: User authenticated but profile not created. Manual intervention may be needed.');
+            _logger.error('CRITICAL: Profile creation failed after $retries attempts', lastError);
+            _logger.warning('User authenticated but profile not created - manual intervention needed');
             // Note: We still don't rethrow to allow signup to complete
             // The provider_service.dart defensive check will handle missing profiles
           }
         } catch (e) {
-          print('AuthService: Unexpected error in profile creation: $e');
-          print('AuthService: Error type: ${e.runtimeType}');
+          _logger.error('Unexpected error in profile creation (${e.runtimeType})', e);
         }
       } else {
-        print('AuthService: Signup succeeded but no session created (email confirmation might be required)');
+        _logger.warning('Signup succeeded but no session created - email confirmation may be required');
       }
 
       return response;
     } catch (e) {
-      print('AuthService: Signup failed at Supabase level: $e');
-      print('AuthService: Error type: ${e.runtimeType}');
+      _logger.error('Signup failed (${e.runtimeType})', e);
       rethrow;
     }
   }
@@ -273,11 +278,6 @@ class AuthService {
     if (profileImageUrl != null) updates['profile_photo_url'] = profileImageUrl;
 
     await _supabase.from('profiles').update(updates).eq('id', userId);
-  }
-
-  // Reset password
-  Future<void> resetPassword(String email) async {
-    await _supabase.auth.resetPasswordForEmail(email);
   }
 
   // Listen to auth state changes

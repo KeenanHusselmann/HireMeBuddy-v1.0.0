@@ -1,0 +1,18 @@
+{
+  "projects": {
+    "default": "hiremebuddy-850a8"
+  },
+  "targets": {
+    "hiremebuddy-850a8": {
+      "hosting": {
+        "landing": [
+          "hiremebuddy-850a8"
+        ],
+        "admin": [
+          "hiremebuddy-admin"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}
