@@ -60,6 +60,8 @@ app.*.map.json
 # Firebase configuration (contains sensitive data)
 /android/app/google-services.json
 /ios/Runner/GoogleService-Info.plist
+hiremebuddy-*.json
+*-firebase-adminsdk-*.json
 
 # IDE specific
 .vscode/settings.json
