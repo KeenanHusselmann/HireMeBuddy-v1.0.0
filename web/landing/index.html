@@ -6,7 +6,7 @@
     <meta name="description" content="HireMeBuddy - Connect with verified service providers across Namibia. Book plumbers, electricians, cleaners, and more. Real-time chat, secure bookings, and trusted reviews.">
     <meta name="keywords" content="Namibia services, hire professional, book handyman, plumber Windhoek, electrician Namibia, cleaning services, verified providers">
     <title>HireMeBuddy - Book Trusted Service Providers in Namibia</title>
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,17 +18,12 @@
         <div class="container">
             <div class="nav-wrapper">
                 <a href="/" class="logo">
-                    <div class="logo-with-badge">
-                        <img src="assets/hiremebuddy-logo.png" alt="HireMeBuddy Logo" class="logo-image">
-                        <span class="namibia-badge">🇳🇦</span>
-                    </div>
-                    <span class="logo-text">HIREMEBUDDY</span>
+                    <img src="assets/favicon.png" alt="HireMeBuddy Logo" class="logo-image">
                 </a>
                 <div class="nav-links">
                     <a href="#how-it-works">How It Works</a>
                     <a href="#for-providers">For Providers</a>
                     <a href="#for-clients">For Clients</a>
-                    <a href="https://play.google.com/store/apps/details?id=com.hiremebuddy.app" class="btn-primary" target="_blank">Download App</a>
                 </div>
                 <button class="mobile-menu-btn" aria-label="Menu">
                     <span></span>
@@ -44,37 +39,106 @@
         <div class="container">
             <div class="hero-content">
                 <div class="hero-text">
-                    <div class="badge">NAMIBIA'S TRUSTED SERVICE MARKETPLACE</div>
                     <h1 class="hero-title">
-                        Book Verified Service Providers.<br>
-                        <span class="gradient-text">Get The Job Done Today.</span>
+                        Your Trusted Services,<br>
+                        <span class="gradient-text">One Tap Away.</span>
                     </h1>
                     <p class="hero-description">
-                        Connect with trusted plumbers, electricians, cleaners, and more. Real-time chat, secure bookings, and verified providers.
+                        From emergency plumbing to professional cleaning. Connect with verified service providers across Namibia in seconds. Real reviews, real-time chat, secure bookings.
                     </p>
                     <div class="hero-buttons">
-                        <a href="https://play.google.com/store/apps/details?id=com.hiremebuddy.app" class="btn-large btn-primary" target="_blank">Download Now</a>
-                        <a href="#how-it-works" class="btn-large btn-secondary">See How It Works</a>
+                        <a href="https://play.google.com/store/apps/details?id=com.hiremebuddy.app" class="btn-large btn-primary" target="_blank">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
+                                <path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.6 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.53,12.9 20.18,13.18L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z"/>
+                            </svg>
+                            Download Free App
+                        </a>
+                        <button type="button" class="btn-large btn-secondary" id="watchDemoBtn">Watch Demo →</button>
                     </div>
                     <div class="social-proof">
+
+                            <!-- Video Modal -->
+                            <div id="videoModal" class="modal-video">
+                                <div class="modal-video-content">
+                                    <span class="modal-video-close" id="closeVideoModal">&times;</span>
+                                    <video id="demoVideo" width="100%" controls>
+                                        <source src="assets/demo.mp4" type="video/mp4">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                </div>
+                            </div>
                         <div class="stat">
-                            <div class="stat-number">200+</div>
+                            <div class="stat-number" id="provider-count">0</div>
                             <div class="stat-label">Verified Providers</div>
                         </div>
                         <div class="stat">
-                            <div class="stat-number">800+</div>
-                            <div class="stat-label">Bookings Made</div>
+                            <div class="stat-number" id="client-count">0</div>
+                            <div class="stat-label">Happy Clients</div>
                         </div>
-                        <div class="stat">
-                            <div class="stat-number">4.7★</div>
-                            <div class="stat-label">Average Rating</div>
-                        </div>
+                    </div>
+                    <script>
+                        // Animate counter from 0 to target value
+                        function animateCounter(element, target, duration = 1500) {
+                            const start = 0;
+                            const increment = target / (duration / 16); // 60fps
+                            let current = start;
+                            
+                            const timer = setInterval(() => {
+                                current += increment;
+                                if (current >= target) {
+                                    element.textContent = target;
+                                    clearInterval(timer);
+                                } else {
+                                    element.textContent = Math.floor(current);
+                                }
+                            }, 16);
+                        }
+                        
+                        // Fetch real-time counts from Supabase
+                        async function loadStats() {
+                            try {
+                                const SUPABASE_URL = 'https://vjpaolkqlumpyuxxmmvr.supabase.co';
+                                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqcGFvbGtxbHVtcHl1eHhtbXZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5MTY3ODEsImV4cCI6MjA2ODQ5Mjc4MX0.irmIx87eljdUN5zdu3IH5aQbUxAgGbjS8d4ENgBg2Tc';
+                                
+                                // Get provider count
+                                const providerRes = await fetch(`${SUPABASE_URL}/rest/v1/provider_profiles?select=id`, {
+                                    headers: {
+                                        'apikey': SUPABASE_ANON_KEY,
+                                        'Prefer': 'count=exact'
+                                    }
+                                });
+                                const providerCount = parseInt(providerRes.headers.get('content-range')?.split('/')[1] || '0');
+                                
+                                // Get client count
+                                const clientRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?role=eq.client&select=id`, {
+                                    headers: {
+                                        'apikey': SUPABASE_ANON_KEY,
+                                        'Prefer': 'count=exact'
+                                    }
+                                });
+                                const clientCount = parseInt(clientRes.headers.get('content-range')?.split('/')[1] || '0');
+                                
+                                // Animate the counters
+                                animateCounter(document.getElementById('provider-count'), providerCount);
+                                animateCounter(document.getElementById('client-count'), clientCount);
+                            } catch (error) {
+                                console.error('Error loading stats:', error);
+                                document.getElementById('provider-count').textContent = '0';
+                                document.getElementById('client-count').textContent = '0';
+                            }
+                        }
+                        
+                        // Load stats when page loads
+                        loadStats();
+                    </script>
+                    <div class="trust-badges" style="margin-top: 32px; display: flex; gap: 16px; flex-wrap: wrap; align-items: center;">
+                        <span style="font-size: 13px; color: #fff; font-weight: 600; text-shadow: 0 1px 6px rgba(20,184,166,0.25);">All providers ID verified</span>
+                        <span style="font-size: 13px; color: #fff; font-weight: 600; text-shadow: 0 1px 6px rgba(20,184,166,0.25);">Secure payments</span>
+                        <span style="font-size: 13px; color: #fff; font-weight: 600; text-shadow: 0 1px 6px rgba(20,184,166,0.25);">Real customer reviews</span>
                     </div>
                 </div>
-                <div class="hero-image">
-                    <div class="phone-mockup">
-                        <img src="assets/hero-app-screenshot.png" alt="HireMeBuddy App Interface" class="screenshot">
-                    </div>
+                <div class="hero-phone">
+                    <img src="assets/hero_app_home.png" alt="HireMeBuddy App - Browse Service Providers" class="phone-image">
                 </div>
             </div>
         </div>
@@ -87,30 +151,33 @@
             <div class="section-layout reverse">
                 <div class="section-content">
                     <div class="section-badge">FOR SERVICE PROVIDERS</div>
-                    <h2 class="section-title">Build Your Business. Earn More.</h2>
+                    <h2 class="section-title">Build Your Business. Earn On Your Terms.</h2>
                     <p class="section-description">
-                        Register in minutes, set your rates, and start receiving bookings. Showcase your work with photos and videos, chat directly with clients, and track your earnings—all from one app.
+                        Join 500+ verified professionals earning more with HireMeBuddy. No commission fees on your first 10 jobs. Set your rates, choose your hours, build your reputation.
                     </p>
-                    <div class="feature-grid">
+                    <div class="features-list">
                         <div class="feature-card">
-                            <h3>Portfolio Showcase</h3>
-                            <p>Upload photos and videos of your work to attract more clients.</p>
+                            <h3>Verified Profile & Badge</h3>
+                            <p>Stand out with a verified badge. Showcase your skills with photos, videos, and real client reviews.</p>
                         </div>
                         <div class="feature-card">
-                            <h3>Set Your Rates</h3>
-                            <p>Control your hourly rates per service and grow your income.</p>
+                            <h3>Instant Booking Alerts</h3>
+                            <p>Get push notifications for new bookings. Accept, negotiate, or decline—you're in complete control.</p>
                         </div>
                         <div class="feature-card">
-                            <h3>ID Verified</h3>
-                            <p>Get verified with ID documents to build client trust.</p>
+                            <h3>Set Your Own Rates</h3>
+                            <p>Choose your hourly rate and availability. No hidden fees. Transparent payments direct to your account.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>Track Your Earnings</h3>
+                            <p>View booking history, earnings reports, and client reviews all in one dashboard.</p>
                         </div>
                     </div>
-                    <button class="btn-large btn-primary open-provider-modal">Start Providing Services</button>
+                    <button class="btn-large btn-primary open-provider-modal">Start Earning Today →</button>
+                    <p style="margin-top: 12px; font-size: 14px; color: var(--gray);">No setup fees • First 10 bookings commission-free</p>
                 </div>
-                <div class="section-image">
-                    <div class="phone-mockup">
-                        <img src="assets/provider-profile-screenshot.png" alt="Provider Profile Interface" class="screenshot">
-                    </div>
+                <div class="section-phone">
+                    <img src="assets/provider_dashboard.png" alt="Provider Dashboard" class="phone-image">
                 </div>
             </div>
         </div>
@@ -122,56 +189,33 @@
             <div class="section-layout">
                 <div class="section-content">
                     <div class="section-badge">FOR CLIENTS</div>
-                    <h2 class="section-title">Find. Book. Done.</h2>
+                    <h2 class="section-title">Your Problem. Solved Today.</h2>
                     <p class="section-description">
-                        Search by service, browse verified profiles with ratings and portfolios, book instantly, and chat directly in-app. Track your booking status in real-time.
+                        Burst pipe at 2am? AC broken on a Sunday? From emergency repairs to regular maintenance—book verified professionals instantly, 24/7. Average response time: under 15 minutes.
                     </p>
-                    <div class="feature-grid">
+                    <div class="features-list">
                         <div class="feature-card">
-                            <h3>Smart Search</h3>
-                            <p>Find providers by service category, location, and availability.</p>
+                            <h3>100% Verified Pros</h3>
+                            <p>Every provider is ID-verified with background checks. Read real reviews from Namibians like you.</p>
                         </div>
                         <div class="feature-card">
-                            <h3>Real-Time Chat</h3>
-                            <p>Message providers directly. Discuss details before booking.</p>
+                            <h3>Chat Before You Book</h3>
+                            <p>Message providers directly. Share photos, get quotes, and ask questions—all before committing.</p>
                         </div>
                         <div class="feature-card">
-                            <h3>Secure Bookings</h3>
-                            <p>Book by the hour with transparent pricing and secure payments.</p>
+                            <h3>Track Your Booking</h3>
+                            <p>Real-time updates from booking to completion. Know exactly when your provider arrives.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>Secure Payments</h3>
+                            <p>Pay by the hour with transparent pricing. No surprises. Money-back guarantee if job isn't completed.</p>
                         </div>
                     </div>
-                    <button class="btn-large btn-primary open-client-modal">Post a Job</button>
+                    <button class="btn-large btn-primary open-client-modal">Find a Pro Now →</button>
+                    <p style="margin-top: 12px; font-size: 14px; color: var(--gray);">Average booking time: 3 minutes • Emergency services available</p>
                 </div>
-                <div class="section-image">
-                    <div class="phone-mockup">
-                        <img src="https://placehold.co/600x700/6366f1/ffffff?text=Client+Dashboard" alt="Client Dashboard Interface" class="screenshot">
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Built for the Grind Section -->
-    <section class="section section-features">
-        <div class="container">
-            <div class="section-header-center">
-                <h2 class="section-title">Why HireMeBuddy?</h2>
-                <p class="section-description">
-                    Built for Namibia. Designed for simplicity. Powered by trust.
-                </p>
-            </div>
-            <div class="features-grid">
-                <div class="feature-large">
-                    <h3>Verified Providers Only</h3>
-                    <p>Every provider is ID-verified by our admin team. Check ratings, reviews, and portfolios before you book—hire with confidence.</p>
-                </div>
-                <div class="feature-large">
-                    <h3>Built-In Chat</h3>
-                    <p>No phone tag or WhatsApp confusion. Chat directly in the app, discuss job details, negotiate rates, and confirm bookings—all in one place.</p>
-                </div>
-                <div class="feature-large">
-                    <h3>Location-Based Matching</h3>
-                    <p>Find providers near you in Windhoek, Walvis Bay, Swakopmund, and across Namibia. Set your service radius and see only nearby providers.</p>
+                <div class="section-phone">
+                    <img src="assets/client_booking_flow.png" alt="Client Booking Flow" class="phone-image">
                 </div>
             </div>
         </div>
@@ -181,44 +225,30 @@
     <section id="how-it-works" class="section section-how">
         <div class="container">
             <div class="section-header-center">
-                <div class="section-badge">HOW IT WORKS</div>
-                <h2 class="section-title">Book a Service Provider in 4 Steps</h2>
-                <p class="section-description">
-                    Simple, fast, and secure. From search to service completion.
-                </p>
+                <h2 class="section-title">How It Works</h2>
+                <p class="section-description">From download to done in 4 simple steps</p>
             </div>
-            <div class="steps">
+            <div class="steps-grid">
                 <div class="step">
-                    <div class="step-number">01</div>
-                    <div class="step-content">
-                        <h3>Search & Browse</h3>
-                        <p>Choose your service category (plumbing, cleaning, electrical, etc). Browse verified providers with ratings, reviews, and portfolios.</p>
-                    </div>
+                    <div class="step-number">1</div>
+                    <h3>Download & Sign Up</h3>
+                    <p>Get the free app from Google Play. Create your account in 60 seconds—no credit card required.</p>
                 </div>
                 <div class="step">
-                    <div class="step-number">02</div>
-                    <div class="step-content">
-                        <h3>View Profile & Chat</h3>
-                        <p>Check provider details, hourly rates, and experience. Message them directly to discuss your job requirements.</p>
-                    </div>
+                    <div class="step-number">2</div>
+                    <h3>Search & Compare</h3>
+                    <p>Browse 50+ service categories. Filter by rating, price, location, and availability. View portfolios and reviews.</p>
                 </div>
                 <div class="step">
-                    <div class="step-number">03</div>
-                    <div class="step-content">
-                        <h3>Book Instantly</h3>
-                        <p>Select your date, time, duration (hourly), job location, and add special instructions. Confirm your booking and track status in real-time.</p>
-                    </div>
+                    <div class="step-number">3</div>
+                    <h3>Chat & Book</h3>
+                    <p>Message providers to discuss your needs. Get instant quotes. Book instantly or schedule for later.</p>
                 </div>
                 <div class="step">
-                    <div class="step-number">04</div>
-                    <div class="step-content">
-                        <h3>Pay & Review</h3>
-                        <p>After job completion, process payment securely. Rate your provider and leave a review to help the community.</p>
-                    </div>
+                    <div class="step-number">4</div>
+                    <h3>Track & Pay</h3>
+                    <p>Get real-time updates. Provider arrives, completes job, you rate and pay—all in the app. Simple.</p>
                 </div>
-            </div>
-            <div class="cta-center">
-                <button class="btn-large btn-primary open-client-modal">Get Started</button>
             </div>
         </div>
     </section>
@@ -227,7 +257,7 @@
     <section class="section section-services">
         <div class="container">
             <div class="section-header-center">
-                <h2 class="section-title">15+ Service Categories</h2>
+                <h2 class="section-title">50+ Services, One App</h2>
                 <p class="section-description">Whatever you need, we've got you covered</p>
             </div>
             <div class="services-grid">
@@ -241,7 +271,7 @@
                     <h3>Cleaning</h3>
                 </div>
                 <div class="service-card">
-                    <h3>Carpentry</h3>
+                    <h3>Laundry</h3>
                 </div>
                 <div class="service-card">
                     <h3>Painting</h3>
@@ -250,22 +280,32 @@
                     <h3>Gardening</h3>
                 </div>
                 <div class="service-card">
-                    <h3>Handyman</h3>
-                </div>
-                <div class="service-card">
-                    <h3>Moving</h3>
-                </div>
-                <div class="service-card">
-                    <h3>Construction</h3>
-                </div>
-                <div class="service-card">
-                    <h3>Security</h3>
-                </div>
-                <div class="service-card">
-                    <h3>Pet Care</h3>
+                    <h3>Carpentry</h3>
                 </div>
                 <div class="service-card">
                     <h3>Tech Support</h3>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 48px;">
+                <p style="font-size: 18px; color: var(--gray); margin-bottom: 24px;">And many more: HVAC, Security, Moving, Tutoring, Photography, Catering...</p>
+                <a href="https://play.google.com/store/apps/details?id=com.hiremebuddy.app" class="btn-large btn-secondary" target="_blank">Browse All Services</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download Section -->
+    <section class="section section-download">
+        <div class="container">
+            <div class="download-content">
+                <h2>Ready to Get Started?</h2>
+                <p>Download HireMeBuddy today and connect with trusted professionals across Namibia.</p>
+                <div class="download-buttons">
+                    <a href="https://play.google.com/store/apps/details?id=com.hiremebuddy.app" class="btn-large btn-primary" target="_blank">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.6 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.53,12.9 20.18,13.18L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z"/>
+                        </svg>
+                        Get it on Google Play
+                    </a>
                 </div>
             </div>
         </div>
@@ -277,7 +317,7 @@
             <div class="footer-content">
                 <div class="footer-col">
                     <div class="footer-logo">
-                        <img src="assets/hiremebuddy-logo.png" alt="HireMeBuddy" style="height: 40px; width: auto;">
+                        <span class="logo-text">HIREMEBUDDY</span>
                     </div>
                     <p class="footer-tagline">
                         Connecting Namibians with trusted service providers. Book verified professionals, track bookings in real-time, and get the job done—all in one app.
@@ -301,37 +341,27 @@
                     </div>
                 </div>
                 <div class="footer-col">
-                    <h4>Platform</h4>
+                    <h4>Company</h4>
                     <ul>
-                        <li><a href="/">Home</a></li>
                         <li><a href="#how-it-works">How It Works</a></li>
                         <li><a href="#for-providers">For Providers</a></li>
                         <li><a href="#for-clients">For Clients</a></li>
                     </ul>
                 </div>
                 <div class="footer-col">
-                    <h4>Company</h4>
-                    <ul>
-                        <li><a href="/about">About Us</a></li>
-                        <li><a href="/mission">Our Mission</a></li>
-                        <li><a href="/careers">Careers</a></li>
-                        <li><a href="/blog">Blog</a></li>
-                    </ul>
-                </div>
-                <div class="footer-col">
                     <h4>Legal</h4>
                     <ul>
-                        <li><a href="/privacy">Privacy Policy</a></li>
-                        <li><a href="/terms">Terms of Service</a></li>
-                        <li><a href="/safety">Safety Guidelines</a></li>
+                        <li><a href="/privacy-policy.html">Privacy Policy</a></li>
+                        <li><a href="/terms.html">Terms of Service</a></li>
+                        <li><a href="/safety.html">Safety Guidelines</a></li>
                     </ul>
                 </div>
                 <div class="footer-col">
                     <h4>Contact</h4>
                     <ul>
-                        <li><a href="mailto:hello@hiremebuddy.app">hello@hiremebuddy.app</a></li>
+                        <li><a href="mailto:info@hiremebuddy.app">info@hiremebuddy.app</a></li>
                         <li>Windhoek, Namibia</li>
-                        <li><a href="/support">Support Center</a></li>
+                        <li><a href="/support.html">Support Center</a></li>
                     </ul>
                 </div>
             </div>
@@ -345,39 +375,25 @@
     <div id="providerModal" class="modal">
         <div class="modal-content">
             <span class="modal-close">&times;</span>
-            <h2>Join as a Service Provider</h2>
-            <p>Be the first to know when we launch. Join our waiting list!</p>
-            <form id="providerForm" class="signup-form">
-                <input type="text" name="full_name" placeholder="Full Name *" required>
-                <input type="email" name="email" placeholder="Email *" required>
-                <input type="tel" name="phone_number" placeholder="Phone Number">
-                <select name="service_category" required>
-                    <option value="">Select Service Category *</option>
-                    <option value="Plumbing">Plumbing</option>
-                    <option value="Electrical">Electrical</option>
-                    <option value="Cleaning">Cleaning</option>
-                    <option value="Carpentry">Carpentry</option>
-                    <option value="Painting">Painting</option>
-                    <option value="Garden">Garden Services</option>
-                    <option value="HVAC">HVAC</option>
-                    <option value="Appliance Repair">Appliance Repair</option>
-                    <option value="Moving">Moving Services</option>
-                    <option value="Security">Security Systems</option>
-                    <option value="Roofing">Roofing</option>
-                    <option value="Other">Other</option>
-                </select>
-                <input type="text" name="location" placeholder="Location (City/Town)">
-                <textarea name="message" placeholder="Tell us about your services (optional)" rows="3"></textarea>
-                <label class="checkbox-label">
-                    <input type="checkbox" name="subscribed_to_updates" checked>
-                    <span>Keep me updated about HireMeBuddy launch</span>
-                </label>
+            <h2>Join Our Provider Waiting List</h2>
+            <p>Be among the first to start earning with HireMeBuddy. We'll notify you when we launch in your area!</p>
+            <form id="providerWaitlistForm" class="waitlist-form">
+                <div class="form-group">
+                    <label for="provider-name">Full Name *</label>
+                    <input type="text" id="provider-name" name="full_name" required placeholder="Enter your full name">
+                </div>
+                <div class="form-group">
+                    <label for="provider-email">Email Address *</label>
+                    <input type="email" id="provider-email" name="email" required placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="provider-phone">Phone Number</label>
+                    <input type="tel" id="provider-phone" name="phone_number" placeholder="+264 81 234 5678">
+                </div>
+                <div id="provider-message" class="form-message"></div>
                 <button type="submit" class="btn-primary btn-full">Join Waiting List</button>
+                <p class="form-note">Already have the app? <a href="https://play.google.com/store/apps/details?id=com.hiremebuddy.app" target="_blank">Download here</a></p>
             </form>
-            <div id="providerSuccess" class="success-message" style="display:none;">
-                <h3>🎉 Thank you for signing up!</h3>
-                <p>We'll notify you as soon as HireMeBuddy launches.</p>
-            </div>
         </div>
     </div>
 
@@ -385,28 +401,192 @@
     <div id="clientModal" class="modal">
         <div class="modal-content">
             <span class="modal-close">&times;</span>
-            <h2>Join as a Client</h2>
-            <p>Be the first to know when we launch. Join our waiting list!</p>
-            <form id="clientForm" class="signup-form">
-                <input type="text" name="full_name" placeholder="Full Name *" required>
-                <input type="email" name="email" placeholder="Email *" required>
-                <input type="tel" name="phone_number" placeholder="Phone Number">
-                <input type="text" name="location" placeholder="Location (City/Town)">
-                <textarea name="message" placeholder="What services are you looking for? (optional)" rows="3"></textarea>
-                <label class="checkbox-label">
-                    <input type="checkbox" name="subscribed_to_updates" checked>
-                    <span>Keep me updated about HireMeBuddy launch</span>
-                </label>
+            <h2>Join Our Client Waiting List</h2>
+            <p>Be the first to access trusted service providers in your area. We'll notify you when we launch!</p>
+            <form id="clientWaitlistForm" class="waitlist-form">
+                <div class="form-group">
+                    <label for="client-name">Full Name *</label>
+                    <input type="text" id="client-name" name="full_name" required placeholder="Enter your full name">
+                </div>
+                <div class="form-group">
+                    <label for="client-email">Email Address *</label>
+                    <input type="email" id="client-email" name="email" required placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="client-phone">Phone Number</label>
+                    <input type="tel" id="client-phone" name="phone_number" placeholder="+264 81 234 5678">
+                </div>
+                <div id="client-message" class="form-message"></div>
                 <button type="submit" class="btn-primary btn-full">Join Waiting List</button>
+                <p class="form-note">Already have the app? <a href="https://play.google.com/store/apps/details?id=com.hiremebuddy.app" target="_blank">Download here</a></p>
             </form>
-            <div id="clientSuccess" class="success-message" style="display:none;">
-                <h3>🎉 Thank you for signing up!</h3>
-                <p>We'll notify you as soon as HireMeBuddy launches.</p>
-            </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="script.js"></script>
-</body>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Smooth Scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                const href = this.getAttribute('href');
+                if (href === '#' || href === '' || href === null) return;
+                e.preventDefault();
+                const target = document.querySelector(href);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // Navbar Scroll Effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Mobile Menu Toggle
+        const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+        const navLinks = document.querySelector('.nav-links');
+        mobileMenuBtn?.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+            mobileMenuBtn.classList.toggle('active');
+        });
+
+        // Modal Functionality
+        const providerModal = document.getElementById('providerModal');
+        const clientModal = document.getElementById('clientModal');
+        document.querySelectorAll('.open-provider-modal').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                providerModal.classList.add('active');
+            });
+        });
+        document.querySelectorAll('.open-client-modal').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                clientModal.classList.add('active');
+            });
+        });
+        document.querySelectorAll('.modal-close').forEach(closeBtn => {
+            closeBtn.addEventListener('click', () => {
+                providerModal.classList.remove('active');
+                clientModal.classList.remove('active');
+            });
+        });
+        window.addEventListener('click', (e) => {
+            if (e.target === providerModal) providerModal.classList.remove('active');
+            if (e.target === clientModal) clientModal.classList.remove('active');
+        });
+
+        // Waitlist Form Submission
+        const SUPABASE_URL = 'https://vjpaolkqlumpyuxxmmvr.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqcGFvbGtxbHVtcHl1eHhtbXZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5MTY3ODEsImV4cCI6MjA2ODQ5Mjc4MX0.irmIx87eljdUN5zdu3IH5aQbUxAgGbjS8d4ENgBg2Tc';
+
+        async function submitWaitlist(formData, userType, messageElement, submitButton) {
+            const originalText = submitButton.textContent;
+            submitButton.disabled = true;
+            submitButton.textContent = 'Submitting...';
+            messageElement.style.display = 'none';
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/waiting_list`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({
+                        email: formData.email,
+                        full_name: formData.full_name || null,
+                        phone_number: formData.phone_number || null,
+                        user_type: userType
+                    })
+                });
+
+                if (response.ok || response.status === 201) {
+                    messageElement.className = 'form-message success';
+                    messageElement.textContent = '🎉 Success! You\'ve been added to our waiting list!';
+                    messageElement.style.display = 'block';
+                    document.getElementById(`${userType}WaitlistForm`).reset();
+                    setTimeout(() => {
+                        (userType === 'provider' ? providerModal : clientModal).classList.remove('active');
+                        messageElement.style.display = 'none';
+                    }, 3000);
+                } else {
+                    const errorData = await response.json();
+                    messageElement.className = 'form-message error';
+                    messageElement.textContent = errorData.message?.includes('duplicate') || errorData.message?.includes('unique') 
+                        ? 'This email is already on our waiting list!' 
+                        : 'Oops! Something went wrong. Please try again.';
+                    messageElement.style.display = 'block';
+                }
+            } catch (error) {
+                messageElement.className = 'form-message error';
+                messageElement.textContent = 'Network error. Please check your connection.';
+                messageElement.style.display = 'block';
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = originalText;
+            }
+        }
+
+        // Provider Form
+        document.getElementById('providerWaitlistForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = {
+                email: document.getElementById('provider-email').value.trim(),
+                full_name: document.getElementById('provider-name').value.trim(),
+                phone_number: document.getElementById('provider-phone').value.trim()
+            };
+            await submitWaitlist(formData, 'provider', document.getElementById('provider-message'), e.target.querySelector('button[type="submit"]'));
+        });
+
+        // Client Form
+        document.getElementById('clientWaitlistForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = {
+                email: document.getElementById('client-email').value.trim(),
+                full_name: document.getElementById('client-name').value.trim(),
+                phone_number: document.getElementById('client-phone').value.trim()
+            };
+            await submitWaitlist(formData, 'client', document.getElementById('client-message'), e.target.querySelector('button[type="submit"]'));
+        });
+
+        // Video Modal
+        const watchDemoBtn = document.getElementById('watchDemoBtn');
+        const videoModal = document.getElementById('videoModal');
+        const closeVideoModal = document.getElementById('closeVideoModal');
+        const demoVideo = document.getElementById('demoVideo');
+        if (watchDemoBtn) {
+            watchDemoBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                videoModal.style.display = 'flex';
+                demoVideo.currentTime = 0;
+                demoVideo.play();
+            });
+        }
+        if (closeVideoModal) {
+            closeVideoModal.addEventListener('click', function() {
+                videoModal.style.display = 'none';
+                demoVideo.pause();
+            });
+        }
+        window.addEventListener('click', function(e) {
+            if (e.target === videoModal) {
+                videoModal.style.display = 'none';
+                demoVideo.pause();
+            }
+        });
+    });
+    </script>
+
+    </script>
+    </body>
 </html>
