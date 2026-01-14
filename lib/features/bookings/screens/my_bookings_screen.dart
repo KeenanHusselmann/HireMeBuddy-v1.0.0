@@ -16,7 +16,6 @@ final reviewStatusProvider = FutureProvider.family.autoDispose<bool, String>((re
     final review = await ReviewService().getReviewByBookingId(bookingId);
     return review != null;
   } catch (e) {
-    print('Error checking review status: $e');
     return false; // Default to no review on error
   }
 });
@@ -42,7 +41,6 @@ final clientBookingsProvider = StreamProvider.autoDispose<List<BookingWithProvid
   final bookingService = BookingService();
   
   await for (final bookings in bookingService.getClientBookingsWithProviderDetails()) {
-    print('🟢 [CLIENT BOOKINGS] Real-time update: ${bookings.length} bookings with provider details');
     yield bookings;
   }
 });
@@ -77,8 +75,8 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> with Single
         return bookings;
       case 1: // Pending
         return bookings.where((b) => b.booking.status == BookingStatus.pending).toList();
-      case 2: // Confirmed (Accepted)
-        return bookings.where((b) => b.booking.status == BookingStatus.confirmed).toList();
+      case 2: // Accepted
+        return bookings.where((b) => b.booking.status == BookingStatus.accepted).toList();
       case 3: // Completed
         return bookings.where((b) => b.booking.status == BookingStatus.completed).toList();
       default:
@@ -88,12 +86,14 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> with Single
 
   Color _getStatusColor(String status) {
     switch (status) {
-      case 'confirmed':
+      case 'accepted':
         return Colors.green;
+      case 'in_progress':
+        return Colors.blue;
       case 'pending':
         return Colors.orange;
       case 'completed':
-        return Colors.blue;
+        return Colors.teal;
       case 'cancelled':
         return Colors.red;
       default:
@@ -103,8 +103,10 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> with Single
 
   IconData _getStatusIcon(String status) {
     switch (status) {
-      case 'confirmed':
+      case 'accepted':
         return Icons.check_circle;
+      case 'in_progress':
+        return Icons.work;
       case 'pending':
         return Icons.schedule;
       case 'completed':
@@ -200,7 +202,7 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> with Single
     // Show status category cards for "All" tab
     if (isAllTab) {
       final pendingCount = allBookings.where((b) => b.booking.status == BookingStatus.pending).length;
-      final confirmedCount = allBookings.where((b) => b.booking.status == BookingStatus.confirmed).length;
+      final acceptedCount = allBookings.where((b) => b.booking.status == BookingStatus.accepted).length;
       final completedCount = allBookings.where((b) => b.booking.status == BookingStatus.completed).length;
       final cancelledCount = allBookings.where((b) => b.booking.status == BookingStatus.cancelled).length;
 
@@ -242,11 +244,11 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> with Single
                   const SizedBox(height: 12),
                   _buildStatusCard(
                     title: 'Accepted',
-                    count: confirmedCount,
+                    count: acceptedCount,
                     icon: Icons.check_circle,
                     color: Colors.green,
                     onTap: () => _tabController.animateTo(2),
-                    showBadge: confirmedCount > 0,
+                    showBadge: acceptedCount > 0,
                   ),
                   const SizedBox(height: 12),
                   _buildStatusCard(

@@ -39,19 +39,16 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> wit
       final savedEmail = prefs.getString('client_reset_email');
       final codeSent = prefs.getBool('client_reset_code_sent') ?? false;
       
-      print('🔄 Loading saved state: email=$savedEmail, codeSent=$codeSent');
-      
       if (savedEmail != null && codeSent) {
         if (mounted) {
           setState(() {
             _emailController.text = savedEmail;
             _codeSent = true;
           });
-          print('✅ State restored successfully');
         }
       }
     } catch (e) {
-      print('❌ Error loading saved state: $e');
+      // Silent fail
     }
   }
 
@@ -60,9 +57,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> wit
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('client_reset_email', _emailController.text);
       await prefs.setBool('client_reset_code_sent', _codeSent);
-      print('💾 State saved: email=${_emailController.text}, codeSent=$_codeSent');
     } catch (e) {
-      print('❌ Error saving state: $e');
+      // Silent fail
     }
   }
 
@@ -71,15 +67,13 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> wit
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('client_reset_email');
       await prefs.remove('client_reset_code_sent');
-      print('🗑️ State cleared');
     } catch (e) {
-      print('❌ Error clearing state: $e');
+      // Silent fail
     }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    print('🔄 App lifecycle changed to: $state');
     if (state == AppLifecycleState.resumed) {
       // Reload state when app comes back to foreground
       _loadSavedState();

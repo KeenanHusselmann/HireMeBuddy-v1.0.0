@@ -214,9 +214,13 @@ class _ProviderReviewsScreenState extends ConsumerState<ProviderReviewsScreen> {
                           itemCount: reviews.length,
                           itemBuilder: (context, index) {
                             final review = reviews[index];
+                            // Handle both old nested format and new flat format
                             final client = review['client'] as Map<String, dynamic>?;
-                            final clientName = client?['full_name'] as String? ?? 'Anonymous';
-                            final clientAvatar = client?['avatar_url'] as String?;
+                            final clientName = client?['full_name'] as String? ?? 
+                                              review['client_full_name'] as String? ?? 
+                                              'Anonymous';
+                            final clientAvatar = client?['avatar_url'] as String? ?? 
+                                                review['client_avatar_url'] as String?;
                             final rating = review['rating'] as int;
                             final comment = review['comment'] as String?;
                             final createdAt = DateTime.parse(review['created_at'] as String);
@@ -318,7 +322,6 @@ class _ProviderReviewsScreenState extends ConsumerState<ProviderReviewsScreen> {
         'avgRating': avgRating,
       };
     } catch (e) {
-      print('Error getting reviews with stats: $e');
       rethrow;
     }
   }

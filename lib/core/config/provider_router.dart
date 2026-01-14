@@ -13,6 +13,7 @@ import '../../features/provider/screens/add_service_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/auth/screens/forgot_password_screen.dart';
 import '../../features/auth/screens/reset_password_screen.dart';
+import '../../shared/widgets/provider_bottom_nav.dart';
 
 /// Helper class to refresh GoRouter when stream changes
 class GoRouterRefreshStream extends ChangeNotifier {
@@ -130,7 +131,7 @@ class ProviderAppRouter {
         GoRoute(
           path: '/provider-dashboard',
           name: 'provider-dashboard',
-          builder: (context, state) => const ProviderDashboardScreen(),
+          builder: (context, state) => const ProviderBottomNav(),
         ),
 
         // Provider Registration

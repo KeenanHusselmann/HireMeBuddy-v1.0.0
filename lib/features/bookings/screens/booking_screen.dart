@@ -327,8 +327,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
              bookingDate.day == date.day &&
              (slot['status'] == 'pending' || 
               slot['status'] == 'accepted' || 
-              slot['status'] == 'in_progress' ||
-              slot['status'] == 'confirmed');
+              slot['status'] == 'in_progress');
     }).toList();
   }
 

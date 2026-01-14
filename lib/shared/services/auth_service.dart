@@ -237,8 +237,6 @@ class AuthService {
   // Get user profile
   Future<UserProfile?> getUserProfile(String userId) async {
     try {
-      print('AuthService: Fetching profile for user: $userId');
-      
       final response = await _supabase
           .from('profiles')
           .select('*')
@@ -246,14 +244,11 @@ class AuthService {
           .maybeSingle();
 
       if (response == null) {
-        print('AuthService: ⚠️ Profile not found for user: $userId');
         return null;
       }
 
-      print('AuthService: ✅ Profile found - Name: ${response['full_name']}, Role: ${response['role']}');
       return UserProfile.fromJson(response);
     } catch (e) {
-      print('AuthService: ❌ Error fetching profile: $e');
       return null;
     }
   }

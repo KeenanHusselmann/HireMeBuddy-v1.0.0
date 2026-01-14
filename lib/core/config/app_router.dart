@@ -22,6 +22,7 @@ import '../../features/provider/screens/provider_dashboard_screen.dart';
 import '../../features/admin/screens/admin_dashboard_screen.dart';
 import '../../features/admin/screens/admin_login_screen.dart';
 import '../../features/chat/screens/conversations_screen.dart';
+import '../../shared/widgets/client_bottom_nav.dart';
 
 // Provider Detail Loader widget
 class ProviderDetailLoader extends StatelessWidget {
@@ -160,7 +161,7 @@ class AppRouter {
         GoRoute(
           path: '/home',
           name: 'home',
-          builder: (context, state) => const HomeScreen(),
+          builder: (context, state) => const ClientBottomNav(),
         ),
 
         // Authentication routes

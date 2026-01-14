@@ -84,7 +84,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
       setState(() => _isLoading = false);
     } catch (e) {
-      print('Error loading profile: $e');
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -135,7 +134,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         );
       }
     } catch (e) {
-      print('Error saving profile: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -198,7 +196,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         );
       }
     } catch (e) {
-      print('Error uploading image: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

@@ -14,12 +14,14 @@ class BookingsManagementScreen extends ConsumerWidget {
 
   Color _getStatusColor(String status) {
     switch (status) {
-      case 'confirmed':
+      case 'accepted':
         return Colors.green;
+      case 'in_progress':
+        return Colors.blue;
       case 'pending':
         return Colors.orange;
       case 'completed':
-        return Colors.blue;
+        return Colors.teal;
       case 'cancelled':
         return Colors.red;
       default:
@@ -131,9 +133,9 @@ class BookingsManagementScreen extends ConsumerWidget {
                         IconButton(
                           icon: const Icon(Icons.check_circle, size: 20, color: Colors.green),
                           onPressed: () async {
-                            await _updateBookingStatus(ref, booking['id'], 'confirmed');
+                            await _updateBookingStatus(ref, booking['id'], 'accepted');
                           },
-                          tooltip: 'Confirm',
+                          tooltip: 'Accept',
                         ),
                       if (status != 'cancelled' && status != 'completed')
                         IconButton(
@@ -230,10 +232,10 @@ class BookingsManagementScreen extends ConsumerWidget {
                     if (status == 'pending')
                       TextButton.icon(
                         onPressed: () async {
-                          await _updateBookingStatus(ref, booking['id'], 'confirmed');
+                          await _updateBookingStatus(ref, booking['id'], 'accepted');
                         },
                         icon: const Icon(Icons.check_circle, size: 18),
-                        label: const Text('Confirm'),
+                        label: const Text('Accept'),
                         style: TextButton.styleFrom(foregroundColor: Colors.green),
                       ),
                     if (status != 'cancelled' && status != 'completed')
@@ -318,7 +320,7 @@ class BookingsManagementScreen extends ConsumerWidget {
       ref.invalidate(bookingsListProvider);
     } catch (e) {
       // Handle error
-      print('Error updating booking status: $e');
+      // Silent error handling
     }
   }
 }

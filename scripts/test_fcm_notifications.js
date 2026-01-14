@@ -1,12 +1,25 @@
 // FCM Push Notification Testing Script
 // Install dependencies: npm install firebase-admin
-// Run: node test_fcm_notifications.js
+// Run: FIREBASE_SERVICE_ACCOUNT_PATH=C:\Secure\HireMeBuddy\your-key.json node test_fcm_notifications.js
 
 const admin = require('firebase-admin');
 const readline = require('readline');
+const fs = require('fs');
 
-// Initialize Firebase Admin SDK
-const serviceAccount = require('../hiremebuddy-850a8-2d033e0c5ff3.json');
+// SECURITY: Load service account from environment variable
+const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+if (!serviceAccountPath) {
+  console.error('ERROR: FIREBASE_SERVICE_ACCOUNT_PATH environment variable not set');
+  console.error('Set it with: set FIREBASE_SERVICE_ACCOUNT_PATH=C:\\Secure\\HireMeBuddy\\your-service-account.json');
+  process.exit(1);
+}
+
+if (!fs.existsSync(serviceAccountPath)) {
+  console.error('ERROR: Service account file not found:', serviceAccountPath);
+  process.exit(1);
+}
+
+const serviceAccount = require(serviceAccountPath);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),

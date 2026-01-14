@@ -36,7 +36,7 @@ class AdminNotificationsScreen extends ConsumerWidget {
           .update({'is_read': true})
           .eq('id', notificationId);
     } catch (e) {
-      print('Error marking notification as read: $e');
+      // Silent error handling
     }
   }
 
@@ -47,7 +47,7 @@ class AdminNotificationsScreen extends ConsumerWidget {
           .update({'is_read': true})
           .eq('is_read', false);
     } catch (e) {
-      print('Error marking all notifications as read: $e');
+      // Silent error handling
     }
   }
 
@@ -58,7 +58,7 @@ class AdminNotificationsScreen extends ConsumerWidget {
           .delete()
           .eq('id', notificationId);
     } catch (e) {
-      print('Error deleting notification: $e');
+      // Silent error handling
     }
   }
 

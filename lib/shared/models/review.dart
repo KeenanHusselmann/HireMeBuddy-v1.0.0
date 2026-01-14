@@ -19,13 +19,13 @@ class Review {
 
   factory Review.fromJson(Map<String, dynamic> json) {
     return Review(
-      id: json['id'] as String,
-      bookingId: json['booking_id'] as String,
-      clientId: json['reviewer_id'] as String,
-      providerId: json['reviewed_id'] as String,
-      rating: json['rating'] as int,
-      comment: json['comment'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      id: json['review_id'] ?? json['id'] as String,
+      bookingId: json['review_booking_id'] ?? json['booking_id'] as String,
+      clientId: json['review_client_id'] ?? json['client_id'] as String,
+      providerId: json['review_provider_id'] ?? json['provider_id'] as String,
+      rating: json['review_rating'] ?? json['rating'] as int,
+      comment: json['review_comment'] ?? json['comment'] as String?,
+      createdAt: DateTime.parse(json['review_created_at'] ?? json['created_at'] as String),
     );
   }
 

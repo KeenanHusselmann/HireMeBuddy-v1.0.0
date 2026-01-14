@@ -4,11 +4,8 @@
 
 import { serve } from 'https://deno.land/std@0.203.0/http/server.ts'
 
-const __DEBUG: string[] = [];
-
 function loadServiceAccount() {
   const raw = Deno.env.get('SERVICE_ACCOUNT_JSON') || '';
-  __DEBUG.push(`SERVICE_ACCOUNT_JSON present: ${!!raw}`);
   if (!raw) throw new Error('SERVICE_ACCOUNT_JSON not set');
   try { return JSON.parse(raw); } catch (e) {
     try {
@@ -53,7 +50,6 @@ async function getAccessToken(sa: any) {
     method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${encodeURIComponent(jwt)}`
   });
   const text = await resp.text();
-  __DEBUG.push(`token endpoint status=${resp.status}`);
   if (!resp.ok) throw new Error(`token fetch failed: ${text}`);
   const j = JSON.parse(text);
   return j.access_token as string;
@@ -85,15 +81,11 @@ async function sendFcmDirect(accessToken: string, projectId: string, token: stri
 
 serve(async (req) => {
   try {
-    __DEBUG.push('enqueue_and_send start');
     if (req.method !== 'POST') return new Response(JSON.stringify({ ok: false, error: 'POST required' }), { status: 400 });
     const body = await req.json();
     const recipientId: string = body.recipient_id;
     const message_payload = body.message_payload || { title: 'Notification', body: '' };
     const data = body.data;
-    __DEBUG.push(`recipientId from body: ${recipientId}`);
-    __DEBUG.push(`body keys: ${Object.keys(body).join(', ')}`);
-    __DEBUG.push(`full body: ${JSON.stringify(body)}`);
     if (!recipientId) return new Response(JSON.stringify({ ok: false, error: 'recipient_id required' }), { status: 400 });
 
     const sa = loadServiceAccount();
@@ -136,30 +128,21 @@ serve(async (req) => {
       try {
         const userResp = await fetch(`${supabaseUrl.replace(/\/$/,'')}/auth/v1/user`, { headers: { Authorization: callerAuth } });
         if (!userResp.ok) {
-          const txt = await userResp.text();
-          __DEBUG.push(`auth check failed: ${userResp.status} ${txt}`);
           return new Response(JSON.stringify({ ok: false, error: 'Invalid auth token' }), { 
             status: 401,
             headers: { 'Content-Type': 'application/json' }
           });
         }
-        // optionally parse user if needed
-        const userJson = await userResp.json();
-        __DEBUG.push(`caller authenticated: ${userJson?.id || 'unknown'}`);
       } catch (e) {
-        __DEBUG.push(`auth check error: ${String(e)}`);
         return new Response(JSON.stringify({ ok: false, error: 'Auth check failed' }), { 
           status: 401,
           headers: { 'Content-Type': 'application/json' }
         });
       }
-    } else {
-      __DEBUG.push('caller authenticated with service role key');
     }
 
     // fetch active device tokens for recipient
     const tokensUrl = `${supabaseUrl.replace(/\/$/,'')}/rest/v1/device_tokens?select=*&user_id=eq.${recipientId}&is_active=eq.true`;
-    __DEBUG.push(`tokensUrl=${tokensUrl}`);
     const tkResp = await fetch(tokensUrl, { headers });
     const tkText = await tkResp.text();
     if (!tkResp.ok) throw new Error(`device_tokens fetch failed: ${tkText}`);
@@ -172,7 +155,7 @@ serve(async (req) => {
       const ins = await fetch(insertUrl, { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const insText = await ins.text();
       if (!ins.ok) throw new Error(`enqueue failed: ${insText}`);
-      return new Response(JSON.stringify({ ok: true, queued: true, debug: __DEBUG }), { status: 200 });
+      return new Response(JSON.stringify({ ok: true, queued: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
     // We have tokens — try immediate send
@@ -193,12 +176,11 @@ serve(async (req) => {
       const payload = { recipient_id: recipientId, message_payload, processed: true };
       await fetch(insertUrl, { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     } catch (e) {
-      __DEBUG.push(`audit insert failed: ${String(e)}`);
+      // Audit insert failed - log but don't fail request
     }
 
-    return new Response(JSON.stringify({ ok: true, sent: true, results, debug: __DEBUG }), { status: 200 });
+    return new Response(JSON.stringify({ ok: true, sent: true, results }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (e) {
-    __DEBUG.push(`error: ${e.stack || String(e)}`);
-    return new Response(JSON.stringify({ ok: false, error: String(e), debug: __DEBUG }), { status: 500 });
+    return new Response(JSON.stringify({ ok: false, error: String(e) }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 });

@@ -65,8 +65,7 @@ class _AddReviewScreenState extends ConsumerState<AddReviewScreen> {
           },
         );
       } catch (e) {
-        // Log but don't block the review flow
-        print('Error sending review notification: $e');
+        // Log but don't block the review flow - silent fail
       }
 
       if (mounted) {

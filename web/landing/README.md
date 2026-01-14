@@ -1,245 +1,100 @@
 # HireMeBuddy Landing Page
 
-A modern, responsive landing page for the HireMeBuddy service marketplace app.
+Modern, responsive landing page for the HireMeBuddy service marketplace app.
 
-## 🚀 Features
-
-- **Responsive Design**: Works perfectly on desktop, tablet, and mobile devices
-- **Modern UI**: Clean, professional design inspired by successful service marketplaces
-- **Performance Optimized**: Fast loading with lazy loading and optimized assets
-- **SEO Friendly**: Proper meta tags and semantic HTML
-- **Interactive**: Smooth animations, scroll effects, and engaging interactions
-- **Accessibility**: ARIA labels and keyboard navigation support
-
-## 📁 Structure
+## 📁 Files
 
 ```
 web/landing/
-├── index.html          # Main HTML file
-├── styles.css          # All styles and responsive design
-├── script.js           # Interactive features and animations
-└── assets/             # Images and media files
-    ├── app-screenshot.png
-    ├── provider-profile.png
-    ├── client-dashboard.png
-    ├── google-play-badge.png
-    ├── app-store-badge.png
-    └── qr-code.png
+├── index.html              # Main landing page
+├── privacy-policy.html     # Privacy policy
+├── terms.html              # Terms of service
+├── safety.html             # Safety guidelines
+├── support.html            # Support center
+├── styles.css              # Stylesheet
+├── script.js               # JavaScript
+└── assets/                 # Images (add your own)
 ```
 
-## 🎨 Design Features
+## 🚀 Deployment to Firebase
 
-### Hero Section
-- Eye-catching headline with gradient text
-- Dual CTA buttons (Download & Learn More)
-- Social proof with stats
-- Animated phone mockup
+### Option 1: Deploy via Firebase CLI
 
-### Key Sections
-1. **For Service Providers**: Showcase benefits of joining the platform
-2. **For Clients**: Highlight easy hiring process
-3. **Built for Namibia**: Local-focused features
-4. **How It Works**: Step-by-step guide
-5. **Popular Services**: Browse service categories
-6. **Download**: App download links with QR code
-7. **Footer**: Complete site navigation and contact info
-
-### Interactive Elements
-- Smooth scroll navigation
-- Fade-in animations on scroll
-- Hover effects on cards and buttons
-- Stats counter animation
-- Parallax hero image
-- Mobile-responsive menu
-
-## 🎯 Next Steps
-
-### Required Assets
-Create or add these images to the `assets/` folder:
-
-1. **app-screenshot.png**: Main app interface screenshot (400x800px recommended)
-2. **provider-profile.png**: Provider profile view (600x800px)
-3. **client-dashboard.png**: Client booking interface (600x800px)
-4. **google-play-badge.png**: Google Play download badge
-5. **app-store-badge.png**: App Store badge (for future iOS release)
-6. **qr-code.png**: QR code linking to app download (200x200px)
-
-### Deployment
-
-#### Option 1: Firebase Hosting (Recommended)
 ```bash
-# Install Firebase CLI
-npm install -g firebase-tools
-
-# Login to Firebase
-firebase login
-
-# Initialize Firebase in your project
-cd web/landing
-firebase init hosting
-
-# Deploy
-firebase deploy --only hosting
+# From project root
+firebase deploy --only hosting:landing
 ```
 
-#### Option 2: Netlify
-```bash
-# Install Netlify CLI
-npm install -g netlify-cli
+### Option 2: Deploy to IONOS (hiremebuddy.app)
 
-# Deploy
-cd web/landing
-netlify deploy --prod
-```
+Upload these files via FTP/SFTP to your IONOS web root:
+- All `.html` files
+- `styles.css`
+- `script.js`
+- `assets/` folder
 
-#### Option 3: Custom Domain (https://hiremebuddy.app)
-1. Build files are ready in `web/landing/`
-2. Upload to your web server via FTP/SFTP
-3. Point `hiremebuddy.app` to your server
-4. Configure SSL certificate (Let's Encrypt recommended)
+## 📧 Email Addresses Used
 
-### SEO Optimization
+The landing page uses these email addresses:
+- **General:** info@hiremebuddy.app
+- **Safety:** safety@hiremebuddy.app
+- **Privacy:** privacy@hiremebuddy.app
+- **Legal:** legal@hiremebuddy.app
 
-1. **Add Google Analytics**:
-```html
-<!-- Add before </head> -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'GA_MEASUREMENT_ID');
-</script>
-```
+Make sure these are configured in your IONOS email settings.
 
-2. **Add Facebook Pixel** (for ads):
-```html
-<!-- Facebook Pixel Code -->
-<script>
-  !function(f,b,e,v,n,t,s)
-  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-  n.queue=[];t=b.createElement(e);t.async=!0;
-  t.src=v;s=b.getElementsByTagName(e)[0];
-  s.parentNode.insertBefore(t,s)}(window, document,'script',
-  'https://connect.facebook.net/en_US/fbevents.js');
-  fbq('init', 'YOUR_PIXEL_ID');
-  fbq('track', 'PageView');
-</script>
-```
+## 🔗 Footer Links
 
-3. **Add Open Graph Meta Tags** (already included):
-```html
-<meta property="og:title" content="HireMeBuddy - Your Service Provider Network">
-<meta property="og:description" content="Connect with skilled service providers in Namibia">
-<meta property="og:image" content="https://hiremebuddy.app/assets/og-image.png">
-<meta property="og:url" content="https://hiremebuddy.app">
-<meta name="twitter:card" content="summary_large_image">
-```
+All footer links now point to actual pages:
+- Privacy Policy → `/privacy-policy.html`
+- Terms of Service → `/terms.html`
+- Safety Guidelines → `/safety.html`
+- Support Center → `/support.html`
 
-### Performance Optimization
+## 🎨 Customization
 
-1. **Compress Images**:
-   - Use tools like TinyPNG or ImageOptim
-   - Convert to WebP format for better compression
-   - Add multiple sizes for responsive images
-
-2. **Minify CSS/JS**:
-```bash
-# Install minifier
-npm install -g clean-css-cli uglify-js
-
-# Minify CSS
-cleancss -o styles.min.css styles.css
-
-# Minify JS
-uglifyjs script.js -o script.min.js -c -m
-```
-
-3. **Enable Caching**:
-Add to `.htaccess` (Apache) or nginx config:
-```apache
-# Cache static assets for 1 year
-<FilesMatch "\.(jpg|jpeg|png|gif|svg|webp|css|js)$">
-  Header set Cache-Control "max-age=31536000, public"
-</FilesMatch>
-```
-
-## 🔧 Customization
-
-### Colors
+### Update Colors
 Edit CSS variables in `styles.css`:
 ```css
 :root {
-    --primary: #6366f1;          /* Main brand color */
-    --secondary: #10b981;        /* Accent color */
-    --dark: #0f172a;             /* Text color */
+    --primary: #14B8A6;
+    --secondary: #06B6D4;
     /* ... */
 }
 ```
 
-### Content
-All text content is in `index.html`. Update:
-- Hero title and description
-- Feature descriptions
-- Service categories
-- Contact information
-- Social media links
+### Update Content
+All text is in the HTML files - search and replace as needed.
 
-### Links
-Update these links in `index.html`:
-- Google Play Store URL
-- Social media profiles (Facebook, Instagram, Twitter)
-- Contact email
-- Support center link
+### Add Real Images
+Replace placeholder screenshots in `index.html`:
+1. Add images to `assets/` folder
+2. Update image sources in HTML
 
-## 📱 Mobile Optimization
+## 📱 Google Play Store Link
 
-The landing page is fully responsive with breakpoints at:
-- **Desktop**: 1024px+
-- **Tablet**: 768px - 1023px
-- **Mobile**: < 768px
-- **Small Mobile**: < 480px
+Update this link throughout the site:
+```
+https://play.google.com/store/apps/details?id=com.hiremebuddy.app
+```
 
-## 🎉 Launch Checklist
+Replace with your actual Play Store URL when published.
 
-- [ ] Add all required images to `assets/` folder
+## ✅ Pre-Deployment Checklist
+
+- [ ] Update all email addresses if needed
+- [ ] Add real app screenshots to assets/
 - [ ] Update Google Play Store link
-- [ ] Add Google Analytics tracking ID
-- [ ] Configure domain (hiremebuddy.app)
-- [ ] Set up SSL certificate
-- [ ] Test on mobile devices
 - [ ] Test all navigation links
-- [ ] Optimize and compress images
-- [ ] Minify CSS and JS
-- [ ] Submit sitemap to Google Search Console
-- [ ] Set up social media profiles
-- [ ] Create Open Graph image (1200x630px)
-- [ ] Test page speed (aim for 90+ on PageSpeed Insights)
+- [ ] Test on mobile devices
+- [ ] Verify privacy policy is current
+- [ ] Test contact forms/modals
 
-## 📊 Analytics Goals
+## 🌐 Live Site
 
-Set up conversion tracking for:
-- Download button clicks
-- Scroll depth (25%, 50%, 75%, 100%)
-- Time on page
-- Form submissions (if added)
-- Service category clicks
-
-## 🌐 Browser Support
-
-- Chrome (latest)
-- Firefox (latest)
-- Safari (latest)
-- Edge (latest)
-- Mobile browsers (iOS Safari, Chrome Mobile)
-
-## 📞 Support
-
-For questions or issues:
-- Email: hello@hiremebuddy.app
-- Location: Windhoek, Namibia
+After deployment, the site will be available at:
+- **Firebase:** https://hiremebuddy-850a8.web.app
+- **Custom Domain:** https://hiremebuddy.app
 
 ---
 

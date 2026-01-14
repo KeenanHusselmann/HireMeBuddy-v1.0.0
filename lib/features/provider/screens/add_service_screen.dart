@@ -140,8 +140,6 @@ class _AddServiceScreenState extends ConsumerState<AddServiceScreen> {
             rateType: _rateType,
           );
 
-      print('✅ [ADD SERVICE] Service added successfully for user: ${user.id}');
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -157,8 +155,6 @@ class _AddServiceScreenState extends ConsumerState<AddServiceScreen> {
         ref.invalidate(userProfileProvider);
         ref.invalidate(providerServicesProvider(user.id));
         ref.invalidate(providerProfileProvider(user.id));
-        
-        print('✅ [ADD SERVICE] Providers invalidated');
         
         // Navigate to dashboard - autoDispose will ensure fresh fetch
         await Future.delayed(const Duration(milliseconds: 200));

@@ -7,7 +7,6 @@ import '../../../core/providers/provider_provider.dart';
 import '../../../core/utils/logger.dart';
 import '../../../shared/models/provider_profile.dart';
 import '../../../shared/services/notification_service.dart';
-import '../../../shared/services/workmanager_notification_service.dart';
 import '../../../core/services/deep_link_handler.dart';
 import 'provider_bookings_screen.dart';
 import 'provider_earnings_screen.dart';
@@ -92,16 +91,9 @@ final unreadMessagesCountProvider = StreamProvider.autoDispose<int>((ref) async*
             final isRead = msg['read'] as bool? ?? false;
             final match = receiverId == profileId && !isRead;
             
-            if (match) {
-              final content = msg['content']?.toString() ?? "";
-              final preview = content.length > 20 ? content.substring(0, 20) : content;
-              print('📨 [MESSAGES] Unread: $preview...');
-            }
-            
             return match;
           }).toList();
           
-          print('🟢 [MESSAGES] Provider unread count: ${filtered.length}');
           return filtered;
         })) {
       yield messages.length;
@@ -151,12 +143,8 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
   }
   
   void _registerDeepLinkHandler() {
-    print('🔗 Dashboard: Registering deep link handler...');
-    print('🔗 Dashboard: Has pending navigation? ${DeepLinkHandler().hasPendingNavigation}');
-    
     // Register callback to handle deep link navigation from push notifications
     DeepLinkHandler().registerNavigationCallback((route, {params}) {
-      print('🔗 Dashboard: Deep link navigation requested: $route, params: $params');
       
       // Use addPostFrameCallback to ensure navigation happens after build
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -212,14 +200,6 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
         _notificationService.subscribeToProviderBookings(_providerId!);
         _notificationService.subscribeToMessages(_providerId!);
         _notificationService.subscribeToNotifications(_providerId!);
-        
-        // Start WorkManager for periodic background notifications (checks every 15 minutes)
-        WorkManagerNotificationService.initialize(_providerId!, 'labourer').then((_) {
-          logger.info('WorkManager background task registered for provider ${AppLogger.sanitizeUserId(_providerId!)}');
-        }).catchError((e) {
-          logger.error('WorkManager initialization error', e);
-        });
-        
         logger.info('Subscribed to notifications for provider');
       }
     } catch (e) {
@@ -1051,17 +1031,17 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(
-                            onPressed: () {
-                              // Show subscription screen for additional services
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const SubscriptionRequiredScreen(),
-                                ),
-                              );
-                            },
+                            onPressed: services.length >= 3 
+                              ? null 
+                              : () {
+                                  context.push('/add-service');
+                                },
                             icon: const Icon(Icons.add),
-                            label: const Text('Add Another Service'),
+                            label: Text(
+                              services.length >= 3 
+                                ? 'Maximum 3 Services Reached' 
+                                : 'Add Another Service'
+                            ),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 12),
                             ),

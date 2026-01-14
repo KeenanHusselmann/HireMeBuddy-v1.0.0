@@ -30,11 +30,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final savedEmail = prefs.getString('client_reset_email');
     final codeSent = prefs.getBool('client_reset_code_sent') ?? false;
     
-    print('🔍 Checking for pending reset: email=$savedEmail, codeSent=$codeSent');
-    
     if (savedEmail != null && codeSent && mounted) {
       // User was in the middle of resetting password - redirect them back
-      print('✅ Redirecting to forgot password screen');
       await Future.delayed(const Duration(milliseconds: 100));
       if (mounted) {
         context.push('/forgot-password');

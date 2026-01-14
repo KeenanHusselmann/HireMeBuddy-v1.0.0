@@ -63,7 +63,6 @@ final providerBookingsProvider = StreamProvider.autoDispose<List<BookingWithClie
         schema: 'public',
         table: 'bookings',
         callback: (payload) async {
-          print('🔄 Booking change detected: ${payload.eventType}');
           // Debounced reload - prevents multiple rapid calls
           loadBookings();
         },
@@ -105,7 +104,7 @@ class _ProviderBookingsScreenState extends ConsumerState<ProviderBookingsScreen>
 
   Color _getStatusColor(String status) {
     switch (status) {
-      case 'confirmed':
+      case 'accepted':
         return Colors.green;
       case 'pending':
         return Colors.orange;
@@ -120,7 +119,7 @@ class _ProviderBookingsScreenState extends ConsumerState<ProviderBookingsScreen>
 
   IconData _getStatusIcon(String status) {
     switch (status) {
-      case 'confirmed':
+      case 'accepted':
         return Icons.check_circle;
       case 'pending':
         return Icons.schedule;
@@ -167,7 +166,7 @@ class _ProviderBookingsScreenState extends ConsumerState<ProviderBookingsScreen>
             ),
             Tab(
               icon: const Icon(Icons.check_circle, size: 18),
-              text: 'Confirmed',
+              text: 'Accepted',
             ),
             Tab(
               icon: const Icon(Icons.done_all, size: 18),
@@ -199,14 +198,14 @@ class _ProviderBookingsScreenState extends ConsumerState<ProviderBookingsScreen>
         data: (bookings) {
           // Filter bookings by status
           final pendingBookings = bookings.where((b) => b.booking.status.value == 'pending').toList();
-          final confirmedBookings = bookings.where((b) => b.booking.status.value == 'confirmed').toList();
+          final acceptedBookings = bookings.where((b) => b.booking.status.value == 'accepted').toList();
           final completedBookings = bookings.where((b) => b.booking.status.value == 'completed').toList();
 
           return TabBarView(
             controller: _tabController,
             children: [
               _buildBookingsList(pendingBookings, ref, 'pending'),
-              _buildBookingsList(confirmedBookings, ref, 'confirmed'),
+              _buildBookingsList(acceptedBookings, ref, 'accepted'),
               _buildBookingsList(completedBookings, ref, 'completed'),
             ],
           );
@@ -226,8 +225,8 @@ class _ProviderBookingsScreenState extends ConsumerState<ProviderBookingsScreen>
           message = 'No pending bookings';
           icon = Icons.schedule;
           break;
-        case 'confirmed':
-          message = 'No confirmed bookings';
+        case 'accepted':
+          message = 'No accepted bookings';
           icon = Icons.check_circle;
           break;
         case 'completed':
@@ -555,10 +554,10 @@ class _ProviderBookingsScreenState extends ConsumerState<ProviderBookingsScreen>
                       child: ElevatedButton.icon(
                         onPressed: () async {
                           try {
-                            // Update booking status - database trigger will send notification automatically
+                            // Update booking status and send notification to client
                             await ref.read(bookingServiceProvider).updateBookingStatus(
                               booking.id,
-                              'confirmed',
+                              'accepted',
                             );
                             
                             ref.invalidate(providerBookingsProvider);
@@ -600,8 +599,8 @@ class _ProviderBookingsScreenState extends ConsumerState<ProviderBookingsScreen>
                   if (booking.status.value == 'pending')
                     const SizedBox(height: 12),
 
-                  // Complete Job button for confirmed bookings
-                  if (booking.status.value == 'confirmed')
+                  // Complete Job button for accepted bookings
+                  if (booking.status.value == 'accepted')
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
@@ -667,7 +666,7 @@ class _ProviderBookingsScreenState extends ConsumerState<ProviderBookingsScreen>
                       ),
                     ),
 
-                  if (booking.status.value == 'confirmed')
+                  if (booking.status.value == 'accepted')
                     const SizedBox(height: 12),
 
                   // Tap to view details hint

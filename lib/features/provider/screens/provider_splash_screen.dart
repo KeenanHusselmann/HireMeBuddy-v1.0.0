@@ -52,7 +52,6 @@ class _ProviderSplashScreenState extends ConsumerState<ProviderSplashScreen>
 
     // Check for pending deep link navigation - if yes, skip auto-navigation
     if (DeepLinkHandler().hasPendingNavigation) {
-      print('🔗 Splash: Skipping auto-navigation - deep link navigation pending');
       // Navigate to dashboard immediately so dashboard can handle the deep link
       context.go('/provider-dashboard');
       return;

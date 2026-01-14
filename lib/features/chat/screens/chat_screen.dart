@@ -81,7 +81,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       // Mark existing messages as read
       await _messageService.markAsRead(providerId);
     } catch (e) {
-      print('Error initializing chat: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error loading chat: $e')),
@@ -102,7 +101,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       });
       _scrollToBottom();
     } catch (e) {
-      print('Error loading messages: $e');
+      // Silent fail
     }
   }
 
@@ -301,10 +300,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey.shade900
+                          : Colors.white,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.grey.shade300,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.black45
+                              : Colors.grey.shade300,
                           blurRadius: 4,
                           offset: const Offset(0, -2),
                         ),
@@ -315,21 +318,27 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       Expanded(
                         child: TextField(
                           controller: _messageController,
-                          style: const TextStyle(
-                            color: Colors.black87,
+                          style: TextStyle(
+                            color: Theme.of(context).brightness == Brightness.dark 
+                                ? Colors.white 
+                                : Colors.black87,
                             fontSize: 16,
                           ),
                           decoration: InputDecoration(
                             hintText: 'Type a message...',
                             hintStyle: TextStyle(
-                              color: Colors.grey.shade500,
+                              color: Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.grey.shade400
+                                  : Colors.grey.shade500,
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(24),
                               borderSide: BorderSide.none,
                             ),
                             filled: true,
-                            fillColor: Colors.grey.shade100,
+                            fillColor: Theme.of(context).brightness == Brightness.dark
+                                ? Colors.grey.shade800
+                                : Colors.grey.shade100,
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 20,
                               vertical: 10,

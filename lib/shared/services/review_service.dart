@@ -8,37 +8,23 @@ class ReviewService {
   // Create a new review
   Future<Review> createReview({
     required String bookingId,
-    required String providerId,
+    required String providerId, // provider_profiles.id passed from booking object
     required int rating,
     String? comment,
   }) async {
     try {
-      final user = _supabase.auth.currentUser;
-      if (user == null) throw Exception('User not authenticated');
+      // Use simple submit_review function with clean table (no FK constraints)
+      final response = await _supabase.rpc('submit_review', params: {
+        'p_booking_id': bookingId,
+        'p_provider_id': providerId,
+        'p_rating': rating,
+        'p_comment': comment,
+      });
 
-      // Get client profile ID (user.id IS the profile id)
-      final clientId = user.id;
-
-      // Upsert review (insert or update if exists based on booking_id unique constraint)
-      final response = await _supabase
-          .from('reviews')
-          .upsert(
-            {
-              'booking_id': bookingId,
-              'reviewed_id': providerId,
-              'reviewer_id': clientId,
-              'rating': rating,
-              'comment': comment,
-            },
-            onConflict: 'booking_id',
-          )
-          .select()
-          .single();
-
-      logger.info('ReviewService: Review created/updated successfully');
-      return Review.fromJson(response);
+      logger.info('ReviewService: Review submitted successfully');
+      return Review.fromJson(response as Map<String, dynamic>);
     } catch (e) {
-      logger.error('ReviewService: Error creating review', e);
+      logger.error('ReviewService: Error submitting review', e);
       rethrow;
     }
   }
@@ -49,7 +35,7 @@ class ReviewService {
       final response = await _supabase
           .from('reviews')
           .select()
-          .eq('reviewed_id', providerId)
+          .eq('provider_id', providerId)
           .order('created_at', ascending: false);
 
       final reviews = (response as List)
@@ -126,17 +112,9 @@ class ReviewService {
   // Get reviews with client details
   Future<List<Map<String, dynamic>>> getProviderReviewsWithClientDetails(String providerId) async {
     try {
-      final response = await _supabase
-          .from('reviews')
-          .select('''
-            *,
-            client:reviewer_id (
-              full_name,
-              avatar_url
-            )
-          ''')
-          .eq('reviewed_id', providerId)
-          .order('created_at', ascending: false);
+      final response = await _supabase.rpc('get_provider_reviews', params: {
+        'p_provider_id': providerId,
+      });
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {

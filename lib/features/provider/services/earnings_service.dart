@@ -135,7 +135,6 @@ class EarningsService {
     return Stream.periodic(const Duration(seconds: 5))
         .asyncMap((_) => getEarnings(providerId))
         .handleError((error) {
-      print('Error fetching earnings: $error');
       return EarningsData(
         todayEarnings: 0,
         weekEarnings: 0,

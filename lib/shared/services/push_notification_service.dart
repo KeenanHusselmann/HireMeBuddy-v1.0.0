@@ -1,6 +1,7 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/utils/logger.dart';
 import '../../core/services/deep_link_handler.dart';
@@ -9,9 +10,52 @@ import 'notification_service.dart';
 /// Background message handler (must be a top-level function)
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // NOTE: In a real app you might re-initialize services here if needed.
-  // For now we just log that a message was received in the background.
   debugPrint('🔔 [BG] FCM message: ${message.messageId}');
+  
+  // Show notification when app is in background/terminated
+  final notification = message.notification;
+  final data = message.data;
+  
+  if (notification != null) {
+    final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+    
+    // Determine channel based on notification type
+    final type = data['type'] as String? ?? 'general';
+    String channelId = 'default';
+    switch (type) {
+      case 'booking':
+      case 'new_booking':
+      case 'booking_status':
+        channelId = 'bookings_channel';
+        break;
+      case 'message':
+      case 'new_message':
+        channelId = 'messages_channel';
+        break;
+      default:
+        channelId = 'notifications_channel';
+    }
+    
+    // Show the notification
+    await flutterLocalNotificationsPlugin.show(
+      notification.hashCode,
+      notification.title,
+      notification.body,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          channelId,
+          channelId == 'bookings_channel' ? 'Bookings' :
+          channelId == 'messages_channel' ? 'Messages' : 'Notifications',
+          channelDescription: 'Notification channel for $type',
+          importance: Importance.high,
+          priority: Priority.high,
+          enableVibration: true,
+          playSound: true,
+        ),
+      ),
+      payload: data.isNotEmpty ? data['type'] : null,
+    );
+  }
 }
 
 class PushNotificationService {
@@ -22,6 +66,7 @@ class PushNotificationService {
 
   final _logger = AppLogger();
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
 
   /// Call once after Firebase.initializeApp()
   Future<void> init() async {
@@ -52,17 +97,56 @@ class PushNotificationService {
       await _saveTokenToSupabase(newToken);
     });
 
-    // Foreground messages: show local notifications using existing service
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    // Foreground messages: manually display notification
+    // FCM does NOT automatically show notifications when app is in foreground
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       _logger.debug('FCM foreground message: ${message.messageId}');
-
+      
       final notification = message.notification;
+      final data = message.data;
+      
       if (notification != null) {
-        NotificationService().showGeneralNotification(
-          title: notification.title ?? 'Notification',
-          body: notification.body ?? '',
-          type: message.data['type'] as String? ?? 'general',
+        // Determine channel based on notification type
+        final type = data['type'] as String? ?? 'general';
+        String channelId = 'default';
+        String channelName = 'Notifications';
+        
+        switch (type) {
+          case 'booking':
+          case 'new_booking':
+          case 'booking_status':
+            channelId = 'bookings_channel';
+            channelName = 'Bookings';
+            break;
+          case 'message':
+          case 'new_message':
+            channelId = 'messages_channel';
+            channelName = 'Messages';
+            break;
+          default:
+            channelId = 'notifications_channel';
+            channelName = 'Notifications';
+        }
+        
+        // Show the notification
+        await _localNotifications.show(
+          notification.hashCode,
+          notification.title,
+          notification.body,
+          NotificationDetails(
+            android: AndroidNotificationDetails(
+              channelId,
+              channelName,
+              channelDescription: 'Notification channel for $type',
+              importance: Importance.high,
+              priority: Priority.high,
+              showWhen: true,
+            ),
+          ),
+          payload: data.isNotEmpty ? data['type'] : null,
         );
+        
+        _logger.info('✅ Displayed foreground notification: ${notification.title}');
       }
     });
 

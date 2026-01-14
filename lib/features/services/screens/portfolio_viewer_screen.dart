@@ -352,7 +352,6 @@ class _PortfolioViewerScreenState extends ConsumerState<PortfolioViewerScreen>
       );
       return thumbnailPath;
     } catch (e) {
-      print('Error generating thumbnail: $e');
       return null;
     }
   }

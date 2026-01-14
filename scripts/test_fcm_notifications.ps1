@@ -7,7 +7,13 @@ Write-Host ""
 
 # Configuration
 $PROJECT_ID = "hiremebuddy-850a8"
-$SERVER_KEY_FILE = "hiremebuddy-850a8-2d033e0c5ff3.json"
+# SECURITY: Use environment variable for service account path
+$SERVER_KEY_FILE = $env:FIREBASE_SERVICE_ACCOUNT_PATH
+if (-not $SERVER_KEY_FILE) {
+    Write-Host "❌ ERROR: FIREBASE_SERVICE_ACCOUNT_PATH not set!" -ForegroundColor Red
+    Write-Host "   Set it with: `$env:FIREBASE_SERVICE_ACCOUNT_PATH='C:\Secure\HireMeBuddy\your-service-account.json'" -ForegroundColor Yellow
+    exit 1
+}
 
 # Check if service account key exists
 if (-not (Test-Path $SERVER_KEY_FILE)) {

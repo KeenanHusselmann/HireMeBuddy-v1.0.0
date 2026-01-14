@@ -6,7 +6,7 @@ import '../../../core/utils/logger.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../shared/widgets/app_logo.dart';
 import '../../../shared/services/notification_service.dart';
-import '../../../shared/services/workmanager_notification_service.dart';
+
 import '../../../core/services/deep_link_handler.dart';
 import '../../bookings/screens/my_bookings_screen.dart';
 import '../widgets/provider_video_feed.dart';
@@ -127,21 +127,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
   
   void _registerDeepLinkHandler() {
-    print('🔗 Client Home: Registering deep link handler...');
-    print('🔗 Client Home: Has pending navigation? ${DeepLinkHandler().hasPendingNavigation}');
-    
     // Register callback to handle deep link navigation from push notifications
     DeepLinkHandler().registerNavigationCallback((route, {params}) {
-      print('🔗 Client Home: Deep link navigation requested: $route, params: $params');
       
       // Use addPostFrameCallback to ensure navigation happens after build
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) {
-          print('🔗 Client Home: Not mounted, skipping navigation');
           return;
         }
-        
-        print('🔗 Client Home: Executing navigation to $route');
         
         switch (route) {
           case 'bookings':
@@ -151,7 +144,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 builder: (context) => const MyBookingsScreen(),
               ),
             );
-            print('🔗 Client Home: Navigated to My Bookings screen');
             break;
             
           case 'messages':
@@ -161,11 +153,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 builder: (context) => const ConversationsScreen(),
               ),
             );
-            print('🔗 Client Home: Navigated to messages screen');
             break;
             
           default:
-            print('⚠️ Unknown deep link route: $route');
+            break;
         }
       });
     });
@@ -186,14 +177,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       if (_notificationsInitialized && _myProfileId != null) {
         _notificationService.subscribeToMessages(_myProfileId!);
         _notificationService.subscribeToNotifications(_myProfileId!);
-        
-        // Start WorkManager for periodic background notifications (checks every 15 minutes)
-        WorkManagerNotificationService.initialize(_myProfileId!, 'client').then((_) {
-          logger.info('✅ Client WorkManager background task registered for: $_myProfileId');
-        }).catchError((e) {
-          logger.error('❌ Client WorkManager initialization error', e);
-        });
-        
         logger.info('✅ Client subscribed to notifications for: $_myProfileId');
       }
     } catch (e) {
@@ -621,159 +604,599 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            // HERO SECTION - Eye-catching gradient banner
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.teal.shade700,
+                    Colors.teal.shade500,
+                    Colors.cyan.shade400,
+                  ],
+                ),
+              ),
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+                  child: Column(
+                    children: [
+                      const AppLogo(width: 180),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Find Trusted Local Services in Namibia',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          height: 1.2,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'From plumbers to photographers, book skilled professionals near you in seconds',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white70,
+                          height: 1.4,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 32),
+                      
+                      // SEARCH BAR - Prominent placement
+                      Builder(
+                        builder: (context) {
+                          final TextEditingController searchController = TextEditingController();
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: TextField(
+                              controller: searchController,
+                              decoration: InputDecoration(
+                                hintText: 'What service do you need?',
+                                hintStyle: TextStyle(color: Colors.grey.shade400),
+                                prefixIcon: const Icon(Icons.search, color: Colors.teal, size: 28),
+                                suffixIcon: Container(
+                                  margin: const EdgeInsets.all(6),
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      _performSearch(context, ref, searchController.text);
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.teal,
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    child: const Text('Search', style: TextStyle(fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                              ),
+                              onSubmitted: (String searchQuery) {
+                                _performSearch(context, ref, searchQuery);
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 40),
+            
+            // QUICK ACTIONS - Prominent CTA buttons
             Padding(
-              padding: const EdgeInsets.fromLTRB(24.0, 8.0, 24.0, 24.0),
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Column(
                 children: [
-                  Center(child: const AppLogo(width: 180)),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Connecting Namibian Skills with Opportunities',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey,
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => context.push('/services'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        backgroundColor: Colors.teal,
+                        foregroundColor: Colors.white,
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      icon: const Icon(Icons.grid_view_rounded, size: 24),
+                      label: const Text(
+                        'Browse All Services',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
                     ),
-                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 40),
+                  
+                  const SizedBox(height: 12),
+                  
+                  // My Bookings Button with Badge
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final pendingCount = ref.watch(clientPendingBookingsCountProvider);
+                      return Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const MyBookingsScreen(),
+                                  ),
+                                );
+                                Future.delayed(const Duration(milliseconds: 500), () {
+                                  ref.invalidate(clientPendingBookingsCountProvider);
+                                });
+                              },
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 18),
+                                foregroundColor: Colors.teal,
+                                side: const BorderSide(color: Colors.teal, width: 2),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              icon: const Icon(Icons.calendar_today, size: 24),
+                              label: const Text(
+                                'My Bookings',
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                          pendingCount.when(
+                            data: (count) => count > 0
+                                ? Positioned(
+                                    right: 12,
+                                    top: -8,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        count > 9 ? '9+' : '$count',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : const SizedBox.shrink(),
+                            loading: () => const SizedBox.shrink(),
+                            error: (_, __) => const SizedBox.shrink(),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
             
-            // Search Bar
+            const SizedBox(height: 48),
+            
+            // HOW IT WORKS SECTION
+            Container(
+              width: double.infinity,
+              color: Colors.grey.shade50,
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 48.0),
+              child: Column(
+                children: [
+                  const Text(
+                    'How It Works',
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Book a service in 3 simple steps',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  
+                  _buildHowItWorksStep(
+                    '1',
+                    'Browse Services',
+                    'Search for the service you need or browse categories',
+                    Icons.search_rounded,
+                    Colors.blue,
+                    'screenshot_browse_services.png', // IMAGE TITLE
+                  ),
+                  const SizedBox(height: 32),
+                  
+                  _buildHowItWorksStep(
+                    '2',
+                    'Choose a Provider',
+                    'View provider profiles, ratings, and videos to find your perfect match',
+                    Icons.person_search_rounded,
+                    Colors.orange,
+                    'screenshot_provider_profile.png', // IMAGE TITLE
+                  ),
+                  const SizedBox(height: 32),
+                  
+                  _buildHowItWorksStep(
+                    '3',
+                    'Book & Connect',
+                    'Schedule a booking, chat with your provider, and get the job done',
+                    Icons.check_circle_rounded,
+                    Colors.green,
+                    'screenshot_booking_chat.png', // IMAGE TITLE
+                  ),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 48),
+            
+            // WHY CHOOSE US SECTION
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Builder(
-                builder: (context) {
-                  final TextEditingController searchController = TextEditingController();
-                  return TextField(
-                    controller: searchController,
-                    decoration: InputDecoration(
-                      hintText: 'Search for services...',
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.search, color: Colors.teal),
-                        tooltip: 'Search',
-                        onPressed: () {
-                          _performSearch(context, ref, searchController.text);
-                        },
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30),
-                        borderSide: const BorderSide(color: Colors.grey),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30),
-                        borderSide: const BorderSide(color: Colors.grey),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30),
-                        borderSide: const BorderSide(color: Colors.teal, width: 2),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Column(
+                children: [
+                  const Text(
+                    'Why Choose HireMeBuddy?',
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
                     ),
-                    onSubmitted: (String searchQuery) {
-                      _performSearch(context, ref, searchQuery);
-                    },
-                  );
-                },
+                  ),
+                  const SizedBox(height: 32),
+                  
+                  _buildFeatureCard(
+                    Icons.verified_user_rounded,
+                    'Verified Professionals',
+                    'All service providers are verified with ID and background checks',
+                    Colors.teal,
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  _buildFeatureCard(
+                    Icons.star_rounded,
+                    'Ratings & Reviews',
+                    'Real reviews from real customers help you make informed decisions',
+                    Colors.amber,
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  _buildFeatureCard(
+                    Icons.video_library_rounded,
+                    'Video Portfolios',
+                    'Watch providers showcase their skills before you book',
+                    Colors.purple,
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  _buildFeatureCard(
+                    Icons.chat_bubble_rounded,
+                    'Direct Messaging',
+                    'Chat with providers to discuss your needs and get quotes',
+                    Colors.blue,
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  _buildFeatureCard(
+                    Icons.payment_rounded,
+                    'Secure Payments',
+                    'Pay securely through the app with multiple payment options',
+                    Colors.green,
+                  ),
+                ],
               ),
             ),
             
-            const SizedBox(height: 24),
+            const SizedBox(height: 48),
             
-            // Browse Services Button
-            ElevatedButton(
-              onPressed: () => context.push('/services'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+            // POPULAR SERVICES PREVIEW
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.teal.shade50,
+                    Colors.cyan.shade50,
+                  ],
                 ),
               ),
-              child: const Text(
-                'Browse Services',
-                style: TextStyle(fontSize: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 48.0),
+              child: Column(
+                children: [
+                  const Text(
+                    'Popular Services',
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'What Namibians are booking right now',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      _buildServiceChip('Plumbing', Icons.plumbing_rounded),
+                      _buildServiceChip('Electrical', Icons.electrical_services_rounded),
+                      _buildServiceChip('Cleaning', Icons.cleaning_services_rounded),
+                      _buildServiceChip('Painting', Icons.format_paint_rounded),
+                      _buildServiceChip('Gardening', Icons.yard_rounded),
+                      _buildServiceChip('Photography', Icons.camera_alt_rounded),
+                      _buildServiceChip('Catering', Icons.restaurant_rounded),
+                      _buildServiceChip('Tutoring', Icons.school_rounded),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 32),
+                  
+                  ElevatedButton(
+                    onPressed: () => context.push('/services'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                      backgroundColor: Colors.teal,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'View All Services',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
               ),
             ),
             
-            const SizedBox(height: 16),
-
-            // My Bookings Button with Badge
-            Consumer(
-              builder: (context, ref, child) {
-                final pendingCount = ref.watch(clientPendingBookingsCountProvider);
-                return Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const MyBookingsScreen(),
-                          ),
-                        );
-                        // Refresh count after navigation
-                        Future.delayed(const Duration(milliseconds: 500), () {
-                          ref.invalidate(clientPendingBookingsCountProvider);
-                        });
-                      },
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                        backgroundColor: Colors.teal,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      icon: const Icon(Icons.calendar_today),
-                      label: const Text(
-                        'My Bookings',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ),
-                    pendingCount.when(
-                      data: (count) => count > 0
-                          ? Positioned(
-                              right: -8,
-                              top: -8,
-                              child: Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: const BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
-                                constraints: const BoxConstraints(
-                                  minWidth: 20,
-                                  minHeight: 20,
-                                ),
-                                child: Text(
-                                  count > 9 ? '9+' : '$count',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            )
-                          : const SizedBox.shrink(),
-                      loading: () => const SizedBox.shrink(),
-                      error: (_, __) => const SizedBox.shrink(),
-                    ),
-                  ],
-                );
-              },
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Provider Video Feed (full width, no padding)
-            const ProviderVideoFeed(),
+            const SizedBox(height: 48),
           ],
         ),
       ),
       ),
+    );
+  }
+
+  // Helper widget: How It Works step with image placeholder
+  Widget _buildHowItWorksStep(
+    String stepNumber,
+    String title,
+    String description,
+    IconData icon,
+    Color color,
+    String imageName,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Step number badge
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                stepNumber,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(icon, color: color, size: 24),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Colors.grey.shade600,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Screenshot placeholder - Add your image here
+                Container(
+                  height: 200,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.image_outlined, size: 48, color: Colors.grey.shade400),
+                        const SizedBox(height: 8),
+                        Text(
+                          imageName,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade500,
+                            fontStyle: FontStyle.italic,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Add screenshot here',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Helper widget: Feature card
+  Widget _buildFeatureCard(IconData icon, String title, String description, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Helper widget: Service chip
+  Widget _buildServiceChip(String label, IconData icon) {
+    return ActionChip(
+      avatar: Icon(icon, size: 20, color: Colors.teal.shade700),
+      label: Text(
+        label,
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: Colors.teal.shade700,
+        ),
+      ),
+      backgroundColor: Colors.white,
+      side: BorderSide(color: Colors.teal.shade200),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      onPressed: () {
+        context.push('/services?category=${Uri.encodeComponent(label)}');
+      },
     );
   }
 }

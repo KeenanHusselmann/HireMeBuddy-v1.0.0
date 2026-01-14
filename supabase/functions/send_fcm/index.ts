@@ -4,11 +4,8 @@
 
 import { serve } from 'https://deno.land/std@0.203.0/http/server.ts'
 
-const __DEBUG: string[] = [];
-
 function loadServiceAccount() {
   const raw = Deno.env.get('SERVICE_ACCOUNT_JSON') || '';
-  __DEBUG.push(`SERVICE_ACCOUNT_JSON present: ${!!raw}`);
   if (!raw) throw new Error('SERVICE_ACCOUNT_JSON not set');
   try {
     return JSON.parse(raw);
@@ -67,7 +64,6 @@ async function getAccessToken(sa: any) {
     body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${encodeURIComponent(jwt)}`
   });
   const text = await resp.text();
-  __DEBUG.push(`token endpoint status=${resp.status} body=${text}`);
   if (!resp.ok) {
     throw new Error(`token fetch failed: ${text}`);
   }
@@ -118,9 +114,7 @@ async function sendFcm(accessToken: string, projectId: string, token: string, no
 
 serve(async (req) => {
   try {
-    __DEBUG.push(`send_fcm invocation start: ${req.method} ${req.url}`);
     const sa = loadServiceAccount();
-    __DEBUG.push(`loaded service account: client_email=${sa.client_email||null} project_id=${sa.project_id||null} private_key_len=${sa.private_key?sa.private_key.length:0}`);
     const projectId = Deno.env.get('PROJECT_ID') || sa.project_id;
     const body = await req.json();
     const tokens: string[] = body.tokens || [];
@@ -128,15 +122,13 @@ serve(async (req) => {
     const data = body.data;
 
     const token = await getAccessToken(sa);
-    __DEBUG.push(`access token length: ${token ? token.length : 0}`);
     const results = [];
     for (const t of tokens) {
       const r = await sendFcm(token, projectId, t, notification, data);
       results.push(r);
     }
-    return new Response(JSON.stringify({ ok: true, results, debug: __DEBUG }), { status: 200 });
+    return new Response(JSON.stringify({ ok: true, results }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (e) {
-    __DEBUG.push(`error: ${e.stack || String(e)}`);
-    return new Response(JSON.stringify({ ok: false, error: String(e), debug: __DEBUG }), { status: 500 });
+    return new Response(JSON.stringify({ ok: false, error: String(e) }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 });

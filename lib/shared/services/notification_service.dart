@@ -265,9 +265,6 @@ class NotificationService {
             value: providerId,
           ),
           callback: (payload) {
-            print('🔔 NOTIFICATION CALLBACK TRIGGERED!');
-            print('New booking received: ${payload.newRecord}');
-            
             final booking = payload.newRecord;
             
             _logger.debug('New booking received, showing notification');

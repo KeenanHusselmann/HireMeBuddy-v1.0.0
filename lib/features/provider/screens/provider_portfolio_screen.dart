@@ -272,7 +272,6 @@ class _ProviderPortfolioScreenState extends ConsumerState<ProviderPortfolioScree
       );
       return thumbnailPath;
     } catch (e) {
-      print('Error generating thumbnail: $e');
       return null;
     }
   }
@@ -594,21 +593,17 @@ class _ProviderPortfolioScreenState extends ConsumerState<ProviderPortfolioScree
 
   Future<void> _recordVideo(String mediaType) async {
     try {
-      print('Starting video recording...');
       setState(() => _isUploading = true);
       
       final service = ref.read(portfolioServiceProvider);
       final video = await service.recordVideo();
       
       if (video == null) {
-        print('Video recording cancelled');
         return;
       }
 
-      print('Video path: ${video.path}');
       await _uploadImage(video.path, mediaType);
     } catch (e) {
-      print('Record video error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -619,7 +614,6 @@ class _ProviderPortfolioScreenState extends ConsumerState<ProviderPortfolioScree
       }
     } finally {
       if (mounted) {
-        print('Resetting _isUploading to false');
         setState(() => _isUploading = false);
       }
     }
@@ -627,29 +621,23 @@ class _ProviderPortfolioScreenState extends ConsumerState<ProviderPortfolioScree
 
   Future<void> _pickFromGallery(String mediaType) async {
     try {
-      print('Picking from gallery, mediaType: $mediaType');
       setState(() => _isUploading = true);
       
       final service = ref.read(portfolioServiceProvider);
       final XFile? media;
       
       if (mediaType == 'video') {
-        print('Calling pickVideoFromGallery...');
         media = await service.pickVideoFromGallery();
       } else {
-        print('Calling pickImageFromGallery...');
         media = await service.pickImageFromGallery();
       }
       
       if (media == null) {
-        print('Media selection cancelled');
         return;
       }
 
-      print('Media selected: ${media.path}');
       await _uploadImage(media.path, mediaType);
     } catch (e) {
-      print('Pick from gallery error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -660,15 +648,12 @@ class _ProviderPortfolioScreenState extends ConsumerState<ProviderPortfolioScree
       }
     } finally {
       if (mounted) {
-        print('Resetting _isUploading to false (pickFromGallery)');
         setState(() => _isUploading = false);
       }
     }
   }
 
   Future<void> _uploadImage(String filePath, String mediaType) async {
-    print('Starting upload for $mediaType: $filePath');
-    
     // Show uploading message
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -694,7 +679,6 @@ class _ProviderPortfolioScreenState extends ConsumerState<ProviderPortfolioScree
 
       final service = ref.read(portfolioServiceProvider);
       
-      print('Uploading to storage...');
       // Upload to storage
       final imageUrl = await service.uploadPortfolioImage(
         providerId: user.id,
@@ -702,8 +686,6 @@ class _ProviderPortfolioScreenState extends ConsumerState<ProviderPortfolioScree
         mediaType: mediaType,
       );
 
-      print('Upload successful, URL: $imageUrl');
-      print('Adding to database...');
       // Add to database
       await service.addPortfolioImage(
         providerId: user.id,
@@ -711,7 +693,6 @@ class _ProviderPortfolioScreenState extends ConsumerState<ProviderPortfolioScree
         mediaType: mediaType,
       );
 
-      print('Database insert successful');
       // Refresh
       setState(() => _refreshKey++);
 
@@ -728,7 +709,6 @@ class _ProviderPortfolioScreenState extends ConsumerState<ProviderPortfolioScree
         );
       }
     } catch (e) {
-      print('Upload error: $e');
       if (mounted) {
         // Hide uploading message
         ScaffoldMessenger.of(context).hideCurrentSnackBar();

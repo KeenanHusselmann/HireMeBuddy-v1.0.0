@@ -63,6 +63,25 @@ app.*.map.json
 hiremebuddy-*.json
 *-firebase-adminsdk-*.json
 
+# Keystore and signing credentials (NEVER COMMIT)
+*.keystore
+*.jks
+key.properties
+/android/key.properties
+/android/*.keystore
+/android/*.jks
+
+# Service account credentials (NEVER COMMIT)
+*.serviceaccount*.json
+.serviceaccount*.json
+.sa_*.txt
+.sa_*.json
+test_jwt.js
+
+# Development scripts with hardcoded credentials
+.dev_supabase_serve.ps1
+*_local.ps1
+
 # IDE specific
 .vscode/settings.json
 *.code-workspace

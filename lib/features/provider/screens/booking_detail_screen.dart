@@ -12,12 +12,14 @@ class BookingDetailScreen extends StatelessWidget {
 
   Color _getStatusColor(String status) {
     switch (status) {
-      case 'confirmed':
+      case 'accepted':
         return Colors.green;
+      case 'in_progress':
+        return Colors.blue;
       case 'pending':
         return Colors.orange;
       case 'completed':
-        return Colors.blue;
+        return Colors.teal;
       case 'cancelled':
         return Colors.red;
       default:
@@ -27,8 +29,10 @@ class BookingDetailScreen extends StatelessWidget {
 
   IconData _getStatusIcon(String status) {
     switch (status) {
-      case 'confirmed':
+      case 'accepted':
         return Icons.check_circle;
+      case 'in_progress':
+        return Icons.work;
       case 'pending':
         return Icons.schedule;
       case 'completed':

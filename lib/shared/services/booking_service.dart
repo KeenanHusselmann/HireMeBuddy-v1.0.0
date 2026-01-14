@@ -327,6 +327,15 @@ class BookingService {
     String? issuesEncountered,
   }) async {
     try {
+      logger.info('BookingService: ATTEMPTING to update booking $bookingId to status: "$status"');
+      
+      // Get booking details before update (for notification)
+      final bookingData = await _supabase
+          .from('bookings')
+          .select('client_id, provider_id, booking_date, booking_time')
+          .eq('id', bookingId)
+          .single();
+      
       final updateData = {
         'status': status,
       };
@@ -339,12 +348,91 @@ class BookingService {
         if (issuesEncountered != null) updateData['issues_encountered'] = issuesEncountered;
       }
 
+      logger.info('BookingService: Update data: $updateData');
       await _supabase.from('bookings').update(updateData).eq('id', bookingId);
 
       logger.info('BookingService: Updated booking $bookingId status to $status');
+      
+      // Send notifications to client when booking status changes
+      if (status == 'accepted' || status == 'completed' || status == 'cancelled') {
+        await _sendBookingStatusNotification(
+          bookingId: bookingId,
+          clientId: bookingData['client_id'] as String,
+          providerId: bookingData['provider_id'] as String,
+          newStatus: status,
+          bookingDate: bookingData['booking_date'] as String,
+          bookingTime: bookingData['booking_time'] as String,
+        );
+      }
     } catch (e) {
       logger.error('BookingService: Error updating booking status', e);
       rethrow;
+    }
+  }
+
+  Future<void> _sendBookingStatusNotification({
+    required String bookingId,
+    required String clientId,
+    required String providerId,
+    required String newStatus,
+    required String bookingDate,
+    required String bookingTime,
+  }) async {
+    try {
+      // Get provider name
+      final providerProfile = await _supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', providerId)
+          .maybeSingle();
+      
+      final providerName = providerProfile?['full_name'] as String? ?? 'Provider';
+      
+      // Determine notification message based on status
+      String title;
+      String body;
+      String notificationType;
+      
+      switch (newStatus) {
+        case 'accepted':
+          title = 'Booking Accepted! 🎉';
+          body = '$providerName accepted your booking for $bookingDate at $bookingTime';
+          break;
+        case 'completed':
+          title = 'Booking Completed ✅';
+          body = '$providerName marked your booking as completed';
+          break;
+        case 'cancelled':
+          title = 'Booking Cancelled ❌';
+          body = 'Your booking with $providerName has been cancelled';
+          break;
+        default:
+          return; // Don't send notification for other statuses
+      }
+      
+      // Use 'booking_update' as the valid enum type for all booking status changes
+      notificationType = 'booking_update';
+      
+      // Send FCM push notification (this also creates the in-app notification record)
+      await _supabase.rpc(
+        'send_fcm_notification_immediate',
+        params: {
+          'p_recipient_id': clientId,
+          'p_title': title,
+          'p_body': body,
+          'p_type': notificationType,
+          'p_data': {
+            'booking_id': bookingId,
+            'status': newStatus,
+            'route': 'bookings',
+          },
+        },
+      );
+      
+      logger.info('🔔 Sent booking status notification to client: $clientId');
+    } catch (e) {
+      // Notification failure should not block booking update
+      logger.error('❌ Error sending booking status notification (non-critical)', e);
     }
   }
 
@@ -379,7 +467,7 @@ class BookingService {
         final bookingDate = booking['booking_date'] as String;
         final status = booking['status'] as String;
         return bookingDate.compareTo(today) >= 0 && 
-               (status == 'pending' || status == 'accepted' || status == 'in_progress' || status == 'confirmed');
+               (status == 'pending' || status == 'accepted' || status == 'in_progress');
       }).toList();
       
       logger.info('BookingService: After filtering: ${filteredBookings.length} active future bookings');

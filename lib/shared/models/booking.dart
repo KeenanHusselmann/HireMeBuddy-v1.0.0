@@ -104,7 +104,8 @@ class Booking {
 
 enum BookingStatus {
   pending('pending'),
-  confirmed('confirmed'),
+  accepted('accepted'),
+  inProgress('in_progress'),
   completed('completed'),
   cancelled('cancelled');
 

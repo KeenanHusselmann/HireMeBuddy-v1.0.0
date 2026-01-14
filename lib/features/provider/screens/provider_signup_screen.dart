@@ -72,14 +72,11 @@ class _ProviderSignupScreenState extends ConsumerState<ProviderSignupScreen> {
   }
 
   Future<void> _handleSignup() async {
-    print('Provider Signup: Form validation starting...');
     if (!_formKey.currentState!.validate()) {
-      print('Provider Signup: Form validation failed');
       return;
     }
 
     if (!_agreedToTerms) {
-      print('Provider Signup: Terms not agreed');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Agree to Terms required', style: TextStyle(fontSize: 13)),
@@ -92,7 +89,6 @@ class _ProviderSignupScreenState extends ConsumerState<ProviderSignupScreen> {
       return;
     }
 
-    print('Provider Signup: Starting signup for ${_emailController.text.trim()}');
     final success = await ref.read(authStateProvider.notifier).signUp(
       email: _emailController.text.trim(),
       password: _passwordController.text,
@@ -104,10 +100,7 @@ class _ProviderSignupScreenState extends ConsumerState<ProviderSignupScreen> {
       role: 'provider', // Set role as provider
     );
 
-    print('Provider Signup: Signup result = $success');
     if (success && mounted) {
-      print('Provider Signup: Success! Navigating to registration...');
-      
       // Invalidate the user profile cache to force refresh with new data
       ref.invalidate(userProfileProvider);
       
@@ -126,11 +119,9 @@ class _ProviderSignupScreenState extends ConsumerState<ProviderSignupScreen> {
         );
         // Go directly to registration to enforce provider_profiles creation
         context.go('/provider-registration');
-        print('Provider Signup: Navigation to /provider-registration completed');
       }
     } else if (mounted) {
       final errorMessage = ref.read(authStateProvider).errorMessage;
-      print('Provider Signup: Failed - $errorMessage');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(errorMessage ?? 'Signup failed', style: const TextStyle(fontSize: 13)),

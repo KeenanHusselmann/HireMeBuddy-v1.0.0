@@ -18,7 +18,13 @@ if (!(Get-Command supabase -ErrorAction SilentlyContinue)) {
 Write-Host "📋 Step 1: Setting environment secrets..." -ForegroundColor Yellow
 
 # Read Firebase service account JSON
-$serviceAccountPath = "hiremebuddy-850a8-2d033e0c5ff3.json"
+# SECURITY: Store service account in secure location, not in project directory
+$serviceAccountPath = $env:FIREBASE_SERVICE_ACCOUNT_PATH
+if (-not $serviceAccountPath) {
+    Write-Host "❌ FIREBASE_SERVICE_ACCOUNT_PATH environment variable not set" -ForegroundColor Red
+    Write-Host "   Set it with: `$env:FIREBASE_SERVICE_ACCOUNT_PATH='C:\Secure\HireMeBuddy\your-service-account.json'" -ForegroundColor Yellow
+    exit 1
+}
 if (!(Test-Path $serviceAccountPath)) {
     Write-Host "❌ Firebase service account file not found: $serviceAccountPath" -ForegroundColor Red
     exit 1
@@ -34,7 +40,9 @@ Write-Host "   Setting SUPABASE_URL..." -ForegroundColor Gray
 supabase secrets set SUPABASE_URL="https://vjpaolkqlumpyuxxmmvr.supabase.co"
 
 Write-Host "   Setting SUPABASE_SERVICE_ROLE_KEY..." -ForegroundColor Gray
-supabase secrets set SUPABASE_SERVICE_ROLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqcGFvbGtxbHVtcHl1eHhtbXZyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjkxNjc4MSwiZXhwIjoyMDY4NDkyNzgxfQ.iuZzBILhJ05jwYQgdamdhEMECWcOt3_vUSIei3Fgyj0"
+Write-Host "   NOTE: service_role_key is auto-provided by Supabase to Edge Functions" -ForegroundColor Yellow
+# SECURITY: service_role_key should NOT be set as a custom secret
+# It's automatically available as SUPABASE_SERVICE_ROLE_KEY in Edge Functions
 
 Write-Host ""
 Write-Host "📦 Step 2: Deploying edge functions..." -ForegroundColor Yellow

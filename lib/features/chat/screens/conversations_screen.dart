@@ -95,7 +95,6 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      print('Error loading conversations: $e');
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

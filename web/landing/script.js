@@ -1,147 +1,33 @@
-// Supabase Configuration
-const SUPABASE_URL = 'https://vjpaolkqlumpyuxxmmvr.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqcGFvbGtxbHVtcHl1eHhtbXZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5MTY3ODEsImV4cCI6MjA2ODQ5Mjc4MX0.irmIx87eljdUN5zdu3IH5aQbUxAgGbjS8d4ENgBg2Tc';
+console.log('Script loaded!'); // Verify script is loading
 
-let supabaseClient;
+// Get modal elements (declared globally so they can be used everywhere)
+const providerModal = document.getElementById('providerModal');
+const clientModal = document.getElementById('clientModal');
 
-// Initialize Supabase
-if (typeof supabase !== 'undefined') {
-    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-}
+console.log('Provider Modal:', providerModal); // Debug log
+console.log('Client Modal:', clientModal); // Debug log
 
-// Wait for DOM to be fully loaded before initializing modals
-document.addEventListener('DOMContentLoaded', () => {
-    // Modal Management
-    const providerModal = document.getElementById('providerModal');
-    const clientModal = document.getElementById('clientModal');
-    const providerForm = document.getElementById('providerForm');
-    const clientForm = document.getElementById('clientForm');
-    const providerSuccess = document.getElementById('providerSuccess');
-    const clientSuccess = document.getElementById('clientSuccess');
-
-    // Open modals
-    document.querySelectorAll('.open-provider-modal').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            providerModal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        });
-    });
-
-    document.querySelectorAll('.open-client-modal').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            clientModal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        });
-    });
-
-    // Close modals
-    document.querySelectorAll('.modal-close').forEach(closeBtn => {
-        closeBtn.addEventListener('click', function() {
-            this.closest('.modal').classList.remove('active');
-            document.body.style.overflow = 'auto';
-        });
-    });
-
-    // Close modal when clicking outside
-    [providerModal, clientModal].forEach(modal => {
-        if (modal) {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.classList.remove('active');
-                    document.body.style.overflow = 'auto';
-                }
+// Smooth Scroll
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+            target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
             });
         }
     });
+});
 
-    // Close modal on ESC key
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            document.querySelectorAll('.modal.active').forEach(modal => {
-                modal.classList.remove('active');
-                document.body.style.overflow = 'auto';
-            });
-        }
-    });
-
-    // Form submission handler
-    async function handleFormSubmit(form, userType, successElement) {
-        const submitBtn = form.querySelector('button[type="submit"]');
-        const originalText = submitBtn.textContent;
-        
-        try {
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Submitting...';
-            
-            const formData = new FormData(form);
-            const data = {
-                full_name: formData.get('full_name'),
-                email: formData.get('email'),
-                phone_number: formData.get('phone_number') || null,
-                user_type: userType,
-                service_category: formData.get('service_category') || null,
-                location: formData.get('location') || null,
-                message: formData.get('message') || null,
-                subscribed_to_updates: formData.get('subscribed_to_updates') === 'on'
-            };
-            
-            if (supabaseClient) {
-                // Submit to Supabase
-                const { error } = await supabaseClient
-                    .from('waiting_list')
-                    .insert([data]);
-                
-                if (error) {
-                    if (error.code === '23505') { // Unique constraint violation
-                        throw new Error('This email is already registered!');
-                    }
-                    throw error;
-                }
-            } else {
-                // Fallback: Log to console (for development)
-                console.log('Waiting list signup:', data);
-                // In production, you might want to send this to a webhook or API
-            }
-            
-            // Show success message
-            form.style.display = 'none';
-            successElement.style.display = 'block';
-            
-            // Reset form after delay
-            setTimeout(() => {
-                form.reset();
-                form.style.display = 'flex';
-                successElement.style.display = 'none';
-                submitBtn.disabled = false;
-                submitBtn.textContent = originalText;
-                form.closest('.modal').classList.remove('active');
-                document.body.style.overflow = 'auto';
-            }, 3000);
-            
-        } catch (error) {
-            console.error('Error submitting form:', error);
-            alert(error.message || 'Something went wrong. Please try again.');
-            submitBtn.disabled = false;
-            submitBtn.textContent = originalText;
-        }
-    }
-
-    // Provider form submission
-    if (providerForm) {
-        providerForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            await handleFormSubmit(providerForm, 'provider', providerSuccess);
-        });
-    }
-
-    // Client form submission
-    if (clientForm) {
-        clientForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            await handleFormSubmit(clientForm, 'client', clientSuccess);
-        });
+// Navbar Scroll Effect
+window.addEventListener('scroll', () => {
+    const navbar = document.querySelector('.navbar');
+    if (window.scrollY > 50) {
+        navbar.classList.add('scrolled');
+    } else {
+        navbar.classList.remove('scrolled');
     }
 });
 
@@ -154,40 +40,49 @@ mobileMenuBtn?.addEventListener('click', () => {
     mobileMenuBtn.classList.toggle('active');
 });
 
-// Smooth Scroll for Navigation Links
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function (e) {
+// Modal Functionality
+document.querySelectorAll('.open-provider-modal').forEach(btn => {
+    console.log('Found provider button:', btn); // Debug log
+    btn.addEventListener('click', (e) => {
         e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
-        if (target) {
-            target.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
-            });
-            // Close mobile menu if open
-            navLinks?.classList.remove('active');
-            mobileMenuBtn?.classList.remove('active');
+        console.log('Provider button clicked'); // Debug log
+        if (providerModal) {
+            providerModal.classList.add('active');
+            console.log('Modal class added, active class list:', providerModal.classList);
         }
     });
 });
 
-// Navbar Scroll Effect
-let lastScroll = 0;
-const navbar = document.querySelector('.navbar');
-
-window.addEventListener('scroll', () => {
-    const currentScroll = window.pageYOffset;
-    
-    if (currentScroll <= 0) {
-        navbar.style.boxShadow = 'none';
-    } else {
-        navbar.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
-    }
-    
-    lastScroll = currentScroll;
+document.querySelectorAll('.open-client-modal').forEach(btn => {
+    console.log('Found client button:', btn); // Debug log
+    btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        console.log('Client button clicked'); // Debug log
+        if (clientModal) {
+            clientModal.classList.add('active');
+            console.log('Modal class added, active class list:', clientModal.classList);
+        }
+    });
 });
 
-// Intersection Observer for Fade-in Animations
+document.querySelectorAll('.modal-close').forEach(closeBtn => {
+    closeBtn.addEventListener('click', () => {
+        if (providerModal) providerModal.classList.remove('active');
+        if (clientModal) clientModal.classList.remove('active');
+    });
+});
+
+// Close modal when clicking outside
+window.addEventListener('click', (e) => {
+    if (e.target === providerModal) {
+        providerModal.classList.remove('active');
+    }
+    if (e.target === clientModal) {
+        clientModal.classList.remove('active');
+    }
+});
+
+// Fade-in Animation on Scroll
 const observerOptions = {
     threshold: 0.1,
     rootMargin: '0px 0px -50px 0px'
@@ -196,182 +91,157 @@ const observerOptions = {
 const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
-            entry.target.classList.add('fade-in');
-            observer.unobserve(entry.target);
+            entry.target.style.opacity = '1';
+            entry.target.style.transform = 'translateY(0)';
         }
     });
 }, observerOptions);
 
 // Observe all sections
-document.querySelectorAll('.section, .hero, .feature-card, .step, .service-card').forEach(el => {
-    observer.observe(el);
+document.querySelectorAll('.section').forEach(section => {
+    section.style.opacity = '0';
+    section.style.transform = 'translateY(30px)';
+    section.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+    observer.observe(section);
 });
 
 // Stats Counter Animation
-const animateCounter = (element, target, duration = 2000) => {
-    const start = 0;
-    const increment = target / (duration / 16);
-    let current = start;
-    
+const animateCounter = (element, target) => {
+    let current = 0;
+    const increment = target / 100;
     const timer = setInterval(() => {
         current += increment;
         if (current >= target) {
-            element.textContent = target.toString().includes('.') ? target : Math.floor(target);
+            element.textContent = target + '+';
             clearInterval(timer);
         } else {
-            element.textContent = Math.floor(current);
+            element.textContent = Math.floor(current) + '+';
         }
-    }, 16);
+    }, 20);
 };
 
-// Animate stats when they come into view
 const statsObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
             const statNumber = entry.target.querySelector('.stat-number');
-            if (statNumber && !statNumber.classList.contains('animated')) {
-                const text = statNumber.textContent;
-                const number = parseInt(text.replace(/\D/g, ''));
-                if (!isNaN(number)) {
-                    statNumber.textContent = '0';
-                    animateCounter(statNumber, number);
-                    if (text.includes('+')) {
-                        statNumber.textContent = statNumber.textContent + '+';
-                    }
-                    if (text.includes('★')) {
-                        statNumber.textContent = text;
-                    }
-                    statNumber.classList.add('animated');
-                }
+            const targetText = statNumber.textContent;
+            const targetNumber = parseInt(targetText);
+            if (!isNaN(targetNumber)) {
+                animateCounter(statNumber, targetNumber);
             }
             statsObserver.unobserve(entry.target);
         }
     });
-}, { threshold: 0.5 });
+}, observerOptions);
 
-document.querySelectorAll('.stat').forEach(stat => {
+document.querySelectorAll('.social-proof .stat').forEach(stat => {
     statsObserver.observe(stat);
 });
 
-// Parallax Effect for Hero Image
-window.addEventListener('scroll', () => {
-    const scrolled = window.pageYOffset;
-    const heroImage = document.querySelector('.phone-mockup');
-    if (heroImage) {
-        heroImage.style.transform = `translateY(${scrolled * 0.3}px)`;
+// Console Easter Egg
+console.log('%cHireMeBuddy', 'font-size: 24px; font-weight: bold; color: #14B8A6;');
+console.log('%cMade in Namibia', 'font-size: 14px; color: #64748b;');
+console.log('%cInterested in joining our team? Email info@hiremebuddy.app', 'font-size: 12px; color: #0D9488;');
+
+// Waitlist Form Submission
+const SUPABASE_URL = 'https://vjpaolkqlumpyuxxmmvr.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqcGFvbGtxbHVtcHl1eHhtbXZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5MTY3ODEsImV4cCI6MjA2ODQ5Mjc4MX0.irmIx87eljdUN5zdu3IH5aQbUxAgGbjS8d4ENgBg2Tc';
+
+async function submitWaitlist(formData, userType, messageElement, submitButton) {
+    const originalButtonText = submitButton.textContent;
+    submitButton.disabled = true;
+    submitButton.textContent = 'Submitting...';
+    messageElement.className = 'form-message';
+    messageElement.style.display = 'none';
+
+    try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/waitlist`, {
+            method: 'POST',
+            headers: {
+                'apikey': SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify({
+                email: formData.email,
+                full_name: formData.full_name || null,
+                phone_number: formData.phone_number || null,
+                user_type: userType
+            })
+        });
+
+        if (response.ok || response.status === 201) {
+            messageElement.className = 'form-message success';
+            messageElement.textContent = '🎉 Success! You\'ve been added to our waiting list. We\'ll notify you soon!';
+            messageElement.style.display = 'block';
+            
+            // Reset form
+            document.getElementById(`${userType}WaitlistForm`).reset();
+            
+            // Close modal after 3 seconds
+            setTimeout(() => {
+                if (userType === 'provider') {
+                    providerModal.classList.remove('active');
+                } else {
+                    clientModal.classList.remove('active');
+                }
+                messageElement.style.display = 'none';
+            }, 3000);
+        } else {
+            const errorData = await response.json();
+            
+            // Check if it's a duplicate email error
+            if (errorData.message && errorData.message.includes('duplicate') || errorData.message && errorData.message.includes('unique')) {
+                messageElement.className = 'form-message error';
+                messageElement.textContent = 'This email is already on our waiting list!';
+            } else {
+                messageElement.className = 'form-message error';
+                messageElement.textContent = 'Oops! Something went wrong. Please try again.';
+            }
+            messageElement.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Waitlist submission error:', error);
+        messageElement.className = 'form-message error';
+        messageElement.textContent = 'Network error. Please check your connection and try again.';
+        messageElement.style.display = 'block';
+    } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = originalButtonText;
     }
-});
+}
 
-// Copy to Clipboard for Email (if needed)
-document.querySelectorAll('a[href^="mailto:"]').forEach(link => {
-    link.addEventListener('click', (e) => {
-        const email = link.textContent;
-        if (navigator.clipboard) {
-            navigator.clipboard.writeText(email).then(() => {
-                // Optional: Show toast notification
-                console.log('Email copied to clipboard');
-            });
-        }
-    });
-});
+// Provider Waitlist Form
+const providerWaitlistForm = document.getElementById('providerWaitlistForm');
+const providerMessage = document.getElementById('provider-message');
 
-// Service Card Interaction
-document.querySelectorAll('.service-card').forEach(card => {
-    card.addEventListener('click', () => {
-        const serviceName = card.querySelector('h3').textContent;
-        // Navigate to download section or show modal
-        const downloadSection = document.querySelector('#download');
-        if (downloadSection) {
-            downloadSection.scrollIntoView({ behavior: 'smooth' });
-        }
-    });
-});
-
-// Form Validation (if you add a waitlist form)
-const validateEmail = (email) => {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
-};
-
-// Track Download Button Clicks (for analytics)
-document.querySelectorAll('.download-btn:not(.disabled)').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        // Add analytics tracking here
-        console.log('Download button clicked:', btn.href);
-        
-        // Example: Google Analytics
-        if (typeof gtag !== 'undefined') {
-            gtag('event', 'download_click', {
-                'event_category': 'engagement',
-                'event_label': 'app_download'
-            });
-        }
-    });
-});
-
-// Detect if user is on mobile
-const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-if (isMobile) {
-    // Add mobile-specific behaviors
-    document.body.classList.add('mobile');
+providerWaitlistForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
     
-    // Show app download CTA more prominently on mobile
-    const downloadSection = document.querySelector('.section-download');
-    if (downloadSection) {
-        downloadSection.style.position = 'sticky';
-        downloadSection.style.bottom = '0';
-    }
-}
-
-// Lazy Loading Images
-if ('loading' in HTMLImageElement.prototype) {
-    const images = document.querySelectorAll('img[loading="lazy"]');
-    images.forEach(img => {
-        img.src = img.dataset.src;
-    });
-} else {
-    // Fallback for browsers that don't support lazy loading
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/lazysizes/5.3.2/lazysizes.min.js';
-    document.body.appendChild(script);
-}
-
-// Performance: Preload critical resources
-const preloadLink = document.createElement('link');
-preloadLink.rel = 'preload';
-preloadLink.as = 'image';
-preloadLink.href = 'assets/app-screenshot.png';
-document.head.appendChild(preloadLink);
-
-// Easter egg: Konami code
-let konamiCode = [];
-const konamiPattern = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
-
-document.addEventListener('keydown', (e) => {
-    konamiCode.push(e.key);
-    if (konamiCode.length > konamiPattern.length) {
-        konamiCode.shift();
-    }
-    if (JSON.stringify(konamiCode) === JSON.stringify(konamiPattern)) {
-        document.body.style.animation = 'rainbow 2s infinite';
-        setTimeout(() => {
-            document.body.style.animation = '';
-        }, 5000);
-    }
+    const formData = {
+        email: document.getElementById('provider-email').value.trim(),
+        full_name: document.getElementById('provider-name').value.trim(),
+        phone_number: document.getElementById('provider-phone').value.trim()
+    };
+    
+    const submitButton = providerWaitlistForm.querySelector('button[type="submit"]');
+    await submitWaitlist(formData, 'provider', providerMessage, submitButton);
 });
 
-// Add rainbow animation
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes rainbow {
-        0% { filter: hue-rotate(0deg); }
-        100% { filter: hue-rotate(360deg); }
-    }
-`;
-document.head.appendChild(style);
+// Client Waitlist Form
+const clientWaitlistForm = document.getElementById('clientWaitlistForm');
+const clientMessage = document.getElementById('client-message');
 
-console.log('%c🤝 HireMeBuddy', 'font-size: 24px; font-weight: bold; color: #6366f1;');
-console.log('%cMade with ❤️ in Namibia', 'font-size: 14px; color: #64748b;');
-console.log('%cInterested in joining our team? Email hello@hiremebuddy.app', 'font-size: 12px; color: #10b981;');
-
+clientWaitlistForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = {
+        email: document.getElementById('client-email').value.trim(),
+        full_name: document.getElementById('client-name').value.trim(),
+        phone_number: document.getElementById('client-phone').value.trim()
+    };
+    
+    const submitButton = clientWaitlistForm.querySelector('button[type="submit"]');
+    await submitWaitlist(formData, 'client', clientMessage, submitButton);
+});

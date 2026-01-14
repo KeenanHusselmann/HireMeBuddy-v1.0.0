@@ -4,7 +4,13 @@
 Write-Host "`nProcessing pending notifications...`n" -ForegroundColor Cyan
 
 $supabaseUrl = "https://vjpaolkqlumpyuxxmmvr.supabase.co"
-$serviceRoleKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqcGFvbGtxbHVtcHl1eHhtbXZyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjkxNjc4MSwiZXhwIjoyMDY4NDkyNzgxfQ.iuZzBILhJ05jwYQgdamdhEMECWcOt3_vUSIei3Fgyj0"
+# SECURITY: Get service_role_key from environment variable
+$serviceRoleKey = $env:SUPABASE_SERVICE_ROLE_KEY
+if (-not $serviceRoleKey) {
+    Write-Host "ERROR: SUPABASE_SERVICE_ROLE_KEY environment variable not set" -ForegroundColor Red
+    Write-Host "Set it with: `$env:SUPABASE_SERVICE_ROLE_KEY='your-key'" -ForegroundColor Yellow
+    exit 1
+}
 
 # Get unprocessed notifications
 $query = "select=*&processed=eq.false&order=created_at.desc&limit=5"

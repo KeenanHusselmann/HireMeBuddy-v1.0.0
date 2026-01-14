@@ -141,10 +141,8 @@ class AdminService {
   // Verify a provider
   Future<void> verifyProvider(String providerId, bool isVerified) async {
     try {
-      // Debug: Check current auth session
+      // Check current auth session
       final currentUser = _supabase.auth.currentUser;
-      print('🔍 [ADMIN] Current user: ${currentUser?.id}');
-      print('🔍 [ADMIN] Current user email: ${currentUser?.email}');
       
       if (currentUser == null) {
         throw Exception('Not authenticated. Please logout and login again.');
@@ -156,8 +154,6 @@ class AdminService {
           .select('role')
           .eq('id', currentUser.id)
           .maybeSingle();
-      
-      print('🔍 [ADMIN] Admin profile role: ${adminProfile?['role']}');
       
       if (adminProfile == null || adminProfile['role'] != 'admin') {
         throw Exception('Unauthorized. Admin role required.');
@@ -171,7 +167,6 @@ class AdminService {
           .maybeSingle();
       
       if (existing == null) {
-        print('🔧 [ADMIN] Creating provider_profiles record for $providerId');
         // Create a basic provider_profiles record if it doesn't exist
         await _supabase
             .from('provider_profiles')
@@ -183,17 +178,13 @@ class AdminService {
               'hourly_rate': 0,
             });
       } else {
-        print('🔧 [ADMIN] Updating existing provider_profiles for $providerId');
         // Update existing record
         await _supabase
             .from('provider_profiles')
             .update({'is_verified': isVerified})
             .eq('id', providerId);
       }
-      
-      print('✅ [ADMIN] Provider verification updated successfully');
     } catch (e) {
-      print('❌ [ADMIN] Error verifying provider: $e');
       throw Exception('Failed to verify provider: $e');
     }
   }
@@ -309,7 +300,8 @@ class AdminService {
 
       Map<String, int> stats = {
         'pending': 0,
-        'confirmed': 0,
+        'accepted': 0,
+        'in_progress': 0,
         'completed': 0,
         'cancelled': 0,
       };
@@ -339,7 +331,6 @@ class AdminService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       // Fallback to manual counting if RPC fails
-      print('⚠️ RPC failed, using manual count: $e');
       return _getServicesManually(limit, offset);
     }
   }
@@ -353,28 +344,9 @@ class AdminService {
         .range(offset, offset + limit - 1);
 
     // Get ALL provider services in one query for efficiency
-    print('🔍 Fetching all provider_services...');
     final allProviderServices = await _supabase
         .from('provider_services')
         .select('service_category_id, provider_id, id, created_at');
-
-    print('📋 Total provider_services entries: ${allProviderServices.length}');
-    
-    if (allProviderServices.isEmpty) {
-      print('⚠️ WARNING: provider_services table is EMPTY!');
-      print('   This means no providers have been registered with services yet.');
-      print('   Make sure providers complete registration and add services.');
-    } else {
-      print('✅ Found provider_services data:');
-      for (var ps in allProviderServices.take(5)) {
-        print('   - Service Category ID: ${ps['service_category_id']}');
-        print('     Provider ID: ${ps['provider_id']}');
-        print('     Created: ${ps['created_at']}');
-      }
-      if (allProviderServices.length > 5) {
-        print('   ... and ${allProviderServices.length - 5} more');
-      }
-    }
     
     // Group by service_category_id
     Map<String, int> countsByCategory = {};

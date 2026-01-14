@@ -25,11 +25,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   bool _isProcessing = false;
   String _selectedMethod = 'cash'; // cash, eft, mobile
 
-  // HireMeBuddy service fee percentage
-  static const double serviceFeePercentage = 0.10; // 10%
-
-  double get serviceFee => widget.booking.totalPrice * serviceFeePercentage;
-  double get totalAmount => widget.booking.totalPrice + serviceFee;
+  double get totalAmount => widget.booking.totalPrice;
 
   Future<void> _processPayment() async {
     setState(() {
@@ -164,7 +160,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               Card(
                 elevation: 4,
                 child: Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -196,41 +192,6 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-
-                      // Service fee
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'HireMeBuddy Service Fee',
-                                  style: TextStyle(fontSize: 16),
-                                ),
-                                Text(
-                                  '(${(serviceFeePercentage * 100).toInt()}%)',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'N\$${serviceFee.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
                       const SizedBox(height: 16),
                       const Divider(thickness: 2),
                       const SizedBox(height: 16),
@@ -239,19 +200,28 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'Total Amount',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                          Flexible(
+                            child: Text(
+                              'Total Amount',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).brightness == Brightness.dark
+                                    ? Colors.white
+                                    : Colors.black,
+                              ),
                             ),
                           ),
-                          Text(
-                            'N\$${totalAmount.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.teal.shade700,
+                          const SizedBox(width: 12),
+                          Flexible(
+                            child: Text(
+                              'N\$${totalAmount.toStringAsFixed(2)}',
+                              textAlign: TextAlign.end,
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.teal.shade400,
+                              ),
                             ),
                           ),
                         ],
@@ -282,14 +252,21 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                       },
                       style: OutlinedButton.styleFrom(
                         backgroundColor:
-                            _selectedMethod == 'cash' ? Colors.teal.shade50 : null,
+                            _selectedMethod == 'cash' ? Colors.teal.shade50 : Colors.transparent,
                         side: BorderSide(
                           color: _selectedMethod == 'cash'
                               ? Colors.teal
                               : Colors.grey.shade400,
+                          width: 2,
                         ),
                       ),
-                      child: const Text('Cash'),
+                      child: Text(
+                        'Cash',
+                        style: TextStyle(
+                          color: _selectedMethod == 'cash' ? Colors.teal.shade900 : Colors.teal.shade700,
+                          fontWeight: _selectedMethod == 'cash' ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -300,14 +277,21 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                       },
                       style: OutlinedButton.styleFrom(
                         backgroundColor:
-                            _selectedMethod == 'eft' ? Colors.teal.shade50 : null,
+                            _selectedMethod == 'eft' ? Colors.teal.shade50 : Colors.transparent,
                         side: BorderSide(
                           color: _selectedMethod == 'eft'
                               ? Colors.teal
                               : Colors.grey.shade400,
+                          width: 2,
                         ),
                       ),
-                      child: const Text('EFT'),
+                      child: Text(
+                        'EFT',
+                        style: TextStyle(
+                          color: _selectedMethod == 'eft' ? Colors.teal.shade900 : Colors.teal.shade700,
+                          fontWeight: _selectedMethod == 'eft' ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -318,14 +302,21 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                       },
                       style: OutlinedButton.styleFrom(
                         backgroundColor:
-                            _selectedMethod == 'mobile' ? Colors.teal.shade50 : null,
+                            _selectedMethod == 'mobile' ? Colors.teal.shade50 : Colors.transparent,
                         side: BorderSide(
                           color: _selectedMethod == 'mobile'
                               ? Colors.teal
                               : Colors.grey.shade400,
+                          width: 2,
                         ),
                       ),
-                      child: const Text('Mobile'),
+                      child: Text(
+                        'Mobile',
+                        style: TextStyle(
+                          color: _selectedMethod == 'mobile' ? Colors.teal.shade900 : Colors.teal.shade700,
+                          fontWeight: _selectedMethod == 'mobile' ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -345,20 +336,24 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Smart Cash Payment',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
+                          color: Colors.orange.shade900,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         '- Only pay the provider after the job is completed.\n'
                         '- Meet in a safe, public place when possible.\n'
                         '- Never hand over cash if you feel unsafe.\n'
                         '- After paying, mark the provider as paid in the app so we can track the job.',
-                        style: TextStyle(fontSize: 14),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.orange.shade900,
+                        ),
                       ),
                     ],
                   ),
@@ -374,17 +369,21 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'EFT Payment',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
+                          color: Colors.blue.shade900,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'You can pay the provider via EFT using their banking details.',
-                        style: TextStyle(fontSize: 14),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.blue.shade900,
+                        ),
                       ),
                       const SizedBox(height: 12),
                       SizedBox(
@@ -455,11 +454,12 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Mobile Payment',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
+                          color: Colors.green.shade900,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -468,7 +468,10 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                                 widget.booking.secondaryContact!.isNotEmpty
                             ? 'Use this mobile number to send payment:\n${widget.booking.secondaryContact}'
                             : 'Use the provider\'s registered mobile number in the booking details to send payment.',
-                        style: const TextStyle(fontSize: 14),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.green.shade900,
+                        ),
                       ),
                     ],
                   ),
