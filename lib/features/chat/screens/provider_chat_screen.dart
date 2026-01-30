@@ -160,7 +160,15 @@ class _ProviderChatScreenState extends ConsumerState<ProviderChatScreen> {
 
   void _scrollToBottom() {
     if (_scrollController.hasClients && _messages.isNotEmpty) {
-      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
     }
   }
 
