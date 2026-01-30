@@ -77,7 +77,6 @@ class _ProviderChatScreenState extends ConsumerState<ProviderChatScreen> {
       await _loadMessages();
 
       // Subscribe to new messages
-      final clientId = widget.client['id'] as String;
       _messagesChannel = _messageService.subscribeToMessages(
         _myProfileId!,
         (message) {
