@@ -16,8 +16,15 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
   final _messageService = MessageService();
   List<Map<String, dynamic>> _conversations = [];
   bool _isLoading = true;
+  bool _isProvider = false;
   String? _myProfileId;
   int _unreadCount = 0;
+
+  // Helper to get theme color based on provider status
+  Color get _themeColor => _isProvider ? Colors.deepOrange.shade600 : Colors.teal.shade600;
+  Color get _themeColorLight => _isProvider ? Colors.deepOrange.shade100 : Colors.teal.shade100;
+  Color get _themeColorDark => _isProvider ? Colors.deepOrange.shade700 : Colors.teal.shade700;
+  Color get _themeColorBase => _isProvider ? Colors.deepOrange : Colors.teal;
 
   @override
   void initState() {
@@ -36,11 +43,12 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
       // Get my profile ID
       final myProfile = await Supabase.instance.client
           .from('profiles')
-          .select('id')
+          .select('id, role')
           .eq('user_id', user.id)
           .single();
       
       _myProfileId = myProfile['id'] as String;
+      _isProvider = myProfile['role'] == 'provider';
 
       // Get all conversations (unique contacts)
       final messagesResponse = await Supabase.instance.client
@@ -124,7 +132,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.teal.shade600,
+        backgroundColor: _themeColor,
         foregroundColor: Colors.white,
         title: const Text('Messages'),
         actions: [
@@ -152,7 +160,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.teal))
+          ? const Center(child: CircularProgressIndicator(color: _themeColorBase))
           : _conversations.isEmpty
               ? Center(
                   child: Column(
@@ -196,7 +204,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
                           children: [
                             CircleAvatar(
                               radius: 28,
-                              backgroundColor: Colors.teal.shade100,
+                              backgroundColor: _themeColorLight,
                               backgroundImage: contact['avatar_url'] != null
                                   ? NetworkImage(contact['avatar_url'])
                                   : null,
@@ -204,7 +212,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
                                   ? Text(
                                       contactName.substring(0, 1).toUpperCase(),
                                       style: TextStyle(
-                                        color: Colors.teal.shade700,
+                                        color: _themeColorDark,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 20,
                                       ),
@@ -285,3 +293,4 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
     );
   }
 }
+

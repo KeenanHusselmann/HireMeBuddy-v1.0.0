@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
@@ -27,6 +27,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Map<String, dynamic>? _profile;
   List<String> _skills = [];
   final ImagePicker _picker = ImagePicker();
+
+  // Helper to get theme color based on provider status
+  Color get _themeColor => _isProvider ? Colors.deepOrange.shade600 : Colors.teal.shade600;
+  Color get _themeColorLight => _isProvider ? Colors.deepOrange.shade100 : Colors.teal.shade100;
+  Color get _themeColorDark => _isProvider ? Colors.deepOrange.shade700 : Colors.teal.shade700;
+  Color get _themeColorBase => _isProvider ? Colors.deepOrange : Colors.teal;
 
   @override
   void initState() {
@@ -297,7 +303,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             Icon(
               Icons.person_add_outlined,
               size: 80,
-              color: Colors.teal.shade300,
+              color: _isProvider ? Colors.deepOrange.shade300 : Colors.teal.shade300,
             ),
             const SizedBox(height: 24),
             const Text(
@@ -325,7 +331,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               icon: const Icon(Icons.arrow_forward),
               label: const Text('Complete Registration'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal.shade600,
+                backgroundColor: _themeColor,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                 textStyle: const TextStyle(
@@ -365,7 +371,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget _buildProfileScreen(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.teal.shade600,
+        backgroundColor: _themeColor,
         foregroundColor: Colors.white,
         title: const Text('My Profile'),
         centerTitle: true,
@@ -401,7 +407,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
       body: SafeArea(
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: Colors.teal))
+            ? const Center(child: CircularProgressIndicator(color: _themeColorBase))
             : _isProvider && !_hasProviderProfile
                 ? _buildRegistrationPrompt()
                 : SingleChildScrollView(
@@ -417,7 +423,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         children: [
                           CircleAvatar(
                             radius: 60,
-                            backgroundColor: Colors.teal.shade100,
+                            backgroundColor: _themeColorLight,
                             backgroundImage: _profile?['avatar_url'] != null
                                 ? NetworkImage(_profile!['avatar_url'])
                                 : null,
@@ -430,7 +436,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     style: TextStyle(
                                       fontSize: 40,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.teal.shade700,
+                                      color: _themeColorDark,
                                     ),
                                   )
                                 : null,
@@ -443,7 +449,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               child: Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: Colors.teal,
+                                  color: _themeColorBase,
                                   shape: BoxShape.circle,
                                   border: Border.all(color: Colors.white, width: 2),
                                 ),
@@ -481,7 +487,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _fullNameController,
-                      cursorColor: Colors.teal.shade600,
+                      cursorColor: _themeColor,
                       decoration: InputDecoration(
                         hintText: 'Enter your full name',
                         prefixIcon: Icon(Icons.person),
@@ -490,7 +496,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           borderSide: BorderSide(color: Colors.grey.shade400),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.teal.shade600, width: 2),
+                          borderSide: BorderSide(color: _themeColor, width: 2),
                         ),
                       ),
                       validator: (value) {
@@ -513,7 +519,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _phoneController,
-                      cursorColor: Colors.teal.shade600,
+                      cursorColor: _themeColor,
                       decoration: InputDecoration(
                         hintText: '+264 81 234 5678',
                         prefixIcon: Icon(Icons.phone),
@@ -522,7 +528,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           borderSide: BorderSide(color: Colors.grey.shade400),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.teal.shade600, width: 2),
+                          borderSide: BorderSide(color: _themeColor, width: 2),
                         ),
                         helperText: 'Used for WhatsApp and phone calls',
                       ),
@@ -555,7 +561,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               children: [
                                 Icon(
                                   Icons.brightness_6,
-                                  color: Colors.teal,
+                                  color: _themeColorBase,
                                 ),
                                 const SizedBox(width: 16),
                                 Expanded(
@@ -589,7 +595,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   onChanged: (isDark) {
                                     ref.read(themeModeProvider.notifier).toggleTheme();
                                   },
-                                  activeThumbColor: Colors.teal,
+                                  activeThumbcolor: _themeColorBase,
                                 ),
                               ],
                             ),
@@ -637,7 +643,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _bioController,
-                      cursorColor: Colors.teal.shade600,
+                      cursorColor: _themeColor,
                       decoration: InputDecoration(
                         hintText: 'Tell clients about yourself...',
                         prefixIcon: Icon(Icons.info_outline),
@@ -646,7 +652,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           borderSide: BorderSide(color: Colors.grey.shade400),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.teal.shade600, width: 2),
+                          borderSide: BorderSide(color: _themeColor, width: 2),
                         ),
                       ),
                       maxLines: 4,
@@ -667,7 +673,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: _hourlyRateController,
-                        cursorColor: Colors.teal.shade600,
+                        cursorColor: _themeColor,
                         decoration: InputDecoration(
                           hintText: 'Enter hourly rate',
                           prefixIcon: Icon(Icons.attach_money),
@@ -676,7 +682,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             borderSide: BorderSide(color: Colors.grey.shade400),
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.teal.shade600, width: 2),
+                            borderSide: BorderSide(color: _themeColor, width: 2),
                           ),
                           helperText: 'Your hourly rate in dollars',
                         ),
@@ -718,7 +724,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   borderSide: BorderSide(color: Colors.grey.shade400),
                                 ),
                                 focusedBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.teal.shade600, width: 2),
+                                  borderSide: BorderSide(color: _themeColor, width: 2),
                                 ),
                               ),
                               onSubmitted: (_) => _addSkill(),
@@ -728,7 +734,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           ElevatedButton(
                             onPressed: _addSkill,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.teal,
+                              backgroundColor: _themeColor,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                             ),
@@ -746,7 +752,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               label: Text(skill),
                               deleteIcon: const Icon(Icons.close, size: 18),
                               onDeleted: () => _removeSkill(skill),
-                              backgroundColor: Colors.teal.shade50,
+                              backgroundColor: _isProvider ? Colors.deepOrange.shade50 : Colors.teal.shade50,
                             );
                           }).toList(),
                         ),
@@ -762,7 +768,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         onPressed: _isSaving ? null : _saveProfile,
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          backgroundColor: Colors.teal,
+                          backgroundcolor: _themeColorBase,
                           foregroundColor: Colors.white,
                         ),
                         child: _isSaving
@@ -811,7 +817,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             color: isSelected
-                ? Colors.teal.withOpacity(0.1)
+                ? _themeColorBase.withOpacity(0.1)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
@@ -848,3 +854,4 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 }
+
