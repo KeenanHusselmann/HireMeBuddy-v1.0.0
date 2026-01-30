@@ -9,51 +9,12 @@ import '../../core/services/deep_link_handler.dart';
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   debugPrint('🔔 [BG] FCM message: ${message.messageId}');
+  debugPrint('🔔 [BG] Notification: ${message.notification?.title}');
+  debugPrint('🔔 [BG] Data: ${message.data}');
   
-  // Show notification when app is in background/terminated
-  final notification = message.notification;
-  final data = message.data;
-  
-  if (notification != null) {
-    final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-    
-    // Determine channel based on notification type
-    final type = data['type'] as String? ?? 'general';
-    String channelId = 'default';
-    switch (type) {
-      case 'booking':
-      case 'new_booking':
-      case 'booking_status':
-        channelId = 'bookings_channel';
-        break;
-      case 'message':
-      case 'new_message':
-        channelId = 'messages_channel';
-        break;
-      default:
-        channelId = 'notifications_channel';
-    }
-    
-    // Show the notification
-    await flutterLocalNotificationsPlugin.show(
-      notification.hashCode,
-      notification.title,
-      notification.body,
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          channelId,
-          channelId == 'bookings_channel' ? 'Bookings' :
-          channelId == 'messages_channel' ? 'Messages' : 'Notifications',
-          channelDescription: 'Notification channel for $type',
-          importance: Importance.high,
-          priority: Priority.high,
-          enableVibration: true,
-          playSound: true,
-        ),
-      ),
-      payload: data.isNotEmpty ? data['type'] : null,
-    );
-  }
+  // DON'T manually show notification here - FCM will handle it automatically
+  // if the message has a notification payload and the app is in background/terminated
+  // We just log for debugging purposes
 }
 
 class PushNotificationService {
@@ -78,8 +39,8 @@ class PushNotificationService {
     );
     _logger.info('FCM permission status: ${settings.authorizationStatus}');
 
-    // Register background handler
-    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    // DON'T register background handler here - it must be done in main() before Firebase.initializeApp()
+    // FirebaseMessaging.onBackgroundMessage() is already called in main()
 
     // Get the FCM token for this device
     final token = await _messaging.getToken();

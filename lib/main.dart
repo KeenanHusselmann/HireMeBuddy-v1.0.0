@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:app_links/app_links.dart';
 import 'core/config/supabase_config.dart';
 import 'core/config/app_router.dart';
@@ -26,6 +27,10 @@ void main() async {
 
   // Initialize bindings in the main zone
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // CRITICAL: Register background message handler BEFORE Firebase.initializeApp()
+  // This is required for FCM to work when app is in background/terminated
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   
   debugPrint('🚀 Launching $appFlavor app...');
   
