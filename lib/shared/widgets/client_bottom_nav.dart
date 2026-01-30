@@ -5,7 +5,6 @@ import '../../features/chat/screens/conversations_screen.dart';
 import '../../features/services/screens/home_screen.dart';
 import '../../features/services/screens/discover_providers_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
-import '../../features/services/screens/home_screen.dart' show clientPendingBookingsCountProvider, clientUnreadMessagesCountProvider;
 
 class ClientBottomNav extends ConsumerStatefulWidget {
   const ClientBottomNav({super.key});

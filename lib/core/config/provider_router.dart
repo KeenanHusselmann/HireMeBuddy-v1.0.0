@@ -57,7 +57,12 @@ class ProviderAppRouter {
         // Skip redirect on splash screen
         if (isSplash) return null;
 
-        // CRITICAL: Validate user role for PROVIDER app
+        // IMMEDIATE REDIRECT: If not authenticated, go to login (don't do DB lookups)
+        if (!isAuthenticated && !isAuthRoute && !isSplash) {
+          return '/provider-login';
+        }
+
+        // CRITICAL: Validate user role for PROVIDER app (only when authenticated)
         if (isAuthenticated) {
           try {
             final session = Supabase.instance.client.auth.currentSession;
@@ -89,11 +94,6 @@ class ProviderAppRouter {
         // Redirect to dashboard if authenticated and trying to access auth pages
         if (isAuthenticated && isAuthRoute) {
           return '/provider-dashboard';
-        }
-
-        // Redirect to login if not authenticated and trying to access protected pages
-        if (!isAuthenticated && !isAuthRoute && !isSplash && !isRegistration) {
-          return '/provider-login';
         }
 
         return null;

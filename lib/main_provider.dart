@@ -155,16 +155,10 @@ class _ProviderAppState extends ConsumerState<ProviderApp> {
   Widget build(BuildContext context) {
     final router = ref.watch(ProviderAppRouter.provider);
 
-    return MaterialApp(
-      home: Builder(
-        builder: (context) {
-          // NUCLEAR OPTION: Catch absolutely everything
-          ErrorWidget.builder = (_) => Container(color: Colors.white);
-          
-          return MaterialApp.router(
-            title: 'HireMeBuddy Provider',
-            debugShowCheckedModeBanner: false,
-            theme: ThemeData(
+    return MaterialApp.router(
+      title: 'HireMeBuddy Provider',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
         brightness: Brightness.light,
         primarySwatch: Colors.deepOrange,
         primaryColor: Colors.deepOrange.shade600,
@@ -210,14 +204,14 @@ class _ProviderAppState extends ConsumerState<ProviderApp> {
           labelStyle: TextStyle(color: Colors.grey.shade700),
           hintStyle: TextStyle(color: Colors.grey.shade500),
           iconColor: Colors.grey.shade700,
-          prefixIconColor: MaterialStateColor.resolveWith((states) {
-            if (states.contains(MaterialState.focused)) {
+          prefixIconColor: WidgetStateColor.resolveWith((states) {
+            if (states.contains(WidgetState.focused)) {
               return Colors.deepOrange.shade600;
             }
             return Colors.grey.shade700;
           }),
-          suffixIconColor: MaterialStateColor.resolveWith((states) {
-            if (states.contains(MaterialState.focused)) {
+          suffixIconColor: WidgetStateColor.resolveWith((states) {
+            if (states.contains(WidgetState.focused)) {
               return Colors.deepOrange.shade600;
             }
             return Colors.grey.shade700;
@@ -228,14 +222,14 @@ class _ProviderAppState extends ConsumerState<ProviderApp> {
           circularTrackColor: Colors.deepOrange.shade100,
         ),
         switchTheme: SwitchThemeData(
-          thumbColor: MaterialStateProperty.resolveWith<Color>((states) {
-            if (states.contains(MaterialState.selected)) {
+          thumbColor: WidgetStateProperty.resolveWith<Color>((states) {
+            if (states.contains(WidgetState.selected)) {
               return Colors.deepOrange;
             }
             return Colors.grey;
           }),
-          trackColor: MaterialStateProperty.resolveWith<Color>((states) {
-            if (states.contains(MaterialState.selected)) {
+          trackColor: WidgetStateProperty.resolveWith<Color>((states) {
+            if (states.contains(WidgetState.selected)) {
               return Colors.deepOrange.shade200;
             }
             return Colors.grey.shade300;
@@ -267,6 +261,5 @@ class _ProviderAppState extends ConsumerState<ProviderApp> {
       ),
       routerConfig: router,
     );
-        },
-      ),
+  }
 }

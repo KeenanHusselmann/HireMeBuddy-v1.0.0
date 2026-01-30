@@ -149,7 +149,7 @@ class _WaitingListScreenState extends ConsumerState<WaitingListScreen> {
                 SizedBox(
                   width: 200,
                   child: DropdownButtonFormField<String>(
-                    value: _filterType,
+                    initialValue: _filterType,
                     decoration: const InputDecoration(
                       labelText: 'User Type',
                       isDense: true,
@@ -170,7 +170,7 @@ class _WaitingListScreenState extends ConsumerState<WaitingListScreen> {
                 SizedBox(
                   width: 200,
                   child: DropdownButtonFormField<String>(
-                    value: _filterStatus,
+                    initialValue: _filterStatus,
                     decoration: const InputDecoration(
                       labelText: 'Status',
                       isDense: true,

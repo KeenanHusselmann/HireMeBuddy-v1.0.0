@@ -4,7 +4,6 @@ import '../../features/provider/screens/provider_dashboard_screen.dart';
 import '../../features/provider/screens/provider_bookings_screen.dart';
 import '../../features/provider/screens/provider_portfolio_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
-import '../../features/provider/screens/provider_dashboard_screen.dart' show pendingBookingsCountProvider, unreadMessagesCountProvider;
 import '../../features/chat/screens/conversations_screen.dart';
 
 class ProviderBottomNav extends ConsumerStatefulWidget {

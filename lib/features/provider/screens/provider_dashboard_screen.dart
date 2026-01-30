@@ -263,14 +263,11 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
         title: const Text('Provider Dashboard'),
         actions: [
           PopupMenuButton<String>(
-            onSelected: (value) {
+            onSelected: (value) async {
               if (value == 'logout') {
-                // Navigate to login screen first, then sign out
-                // This prevents widget tree errors during logout
-                context.go('/provider-login');
-                Future.delayed(const Duration(milliseconds: 100), () {
-                  ref.read(authStateProvider.notifier).signOut();
-                });
+                // Sign out first - router will handle redirect automatically
+                // Use Supabase directly to avoid any provider state issues
+                await Supabase.instance.client.auth.signOut();
               } else if (value == 'profile') {
                 context.push('/profile');
               } else if (value == 'portfolio') {

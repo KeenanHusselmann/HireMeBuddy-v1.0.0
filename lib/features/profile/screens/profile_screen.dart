@@ -589,7 +589,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   onChanged: (isDark) {
                                     ref.read(themeModeProvider.notifier).toggleTheme();
                                   },
-                                  activeColor: Colors.deepOrange,
+                                  activeThumbColor: Colors.deepOrange,
                                 ),
                               ],
                             ),

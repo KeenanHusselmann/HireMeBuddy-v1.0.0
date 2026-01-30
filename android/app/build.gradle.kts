@@ -88,9 +88,3 @@ dependencies {
 flutter {
     source = "../.."
 }
-
-// Pass flavor to Flutter as dart-define
-android.applicationVariants.configureEach {
-    val flavorName = this.flavorName
-    mergedFlavor.manifestPlaceholders["flutterDartDefines"] = "APP_FLAVOR=$flavorName"
-}

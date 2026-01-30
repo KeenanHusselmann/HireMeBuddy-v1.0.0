@@ -2,6 +2,7 @@
 /// 
 /// This file provides comprehensive validation for all user inputs
 /// to ensure data integrity and security across the application.
+library;
 
 class EmailValidator {
   static final RegExp _emailRegex = RegExp(
