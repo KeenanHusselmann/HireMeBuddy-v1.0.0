@@ -154,16 +154,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   void _scrollToBottom() {
-    if (_scrollController.hasClients && _messages.isNotEmpty) {
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (_scrollController.hasClients) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
-      });
+    // With reverse: true, position 0 is at the bottom (newest messages)
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
     }
   }
 
@@ -310,10 +307,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         )
                       : ListView.builder(
                           controller: _scrollController,
+                          reverse: true,
                           padding: const EdgeInsets.all(16),
                           itemCount: _messages.length,
                           itemBuilder: (context, index) {
-                            final message = _messages[index];
+                            // Reverse the index to show oldest at top, newest at bottom
+                            final reversedIndex = _messages.length - 1 - index;
+                            final message = _messages[reversedIndex];
                             final isMe = message['sender_id'] == _myProfileId;
                             final createdAt = DateTime.parse(message['created_at'] as String);
                             final time = DateFormat('HH:mm').format(createdAt);
