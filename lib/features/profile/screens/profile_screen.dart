@@ -297,7 +297,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             Icon(
               Icons.person_add_outlined,
               size: 80,
-              color: Colors.deepOrange.shade300,
+              color: Colors.teal.shade300,
             ),
             const SizedBox(height: 24),
             const Text(
@@ -325,7 +325,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               icon: const Icon(Icons.arrow_forward),
               label: const Text('Complete Registration'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepOrange.shade600,
+                backgroundColor: Colors.teal.shade600,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                 textStyle: const TextStyle(
@@ -365,7 +365,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget _buildProfileScreen(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.deepOrange.shade600,
+        backgroundColor: Colors.teal.shade600,
         foregroundColor: Colors.white,
         title: const Text('My Profile'),
         centerTitle: true,
@@ -401,7 +401,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
       body: SafeArea(
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: Colors.deepOrange))
+            ? const Center(child: CircularProgressIndicator(color: Colors.teal))
             : _isProvider && !_hasProviderProfile
                 ? _buildRegistrationPrompt()
                 : SingleChildScrollView(
@@ -417,7 +417,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         children: [
                           CircleAvatar(
                             radius: 60,
-                            backgroundColor: Colors.deepOrange.shade100,
+                            backgroundColor: Colors.teal.shade100,
                             backgroundImage: _profile?['avatar_url'] != null
                                 ? NetworkImage(_profile!['avatar_url'])
                                 : null,
@@ -430,7 +430,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     style: TextStyle(
                                       fontSize: 40,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.deepOrange.shade700,
+                                      color: Colors.teal.shade700,
                                     ),
                                   )
                                 : null,
@@ -443,7 +443,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               child: Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: Colors.deepOrange,
+                                  color: Colors.teal,
                                   shape: BoxShape.circle,
                                   border: Border.all(color: Colors.white, width: 2),
                                 ),
@@ -481,7 +481,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _fullNameController,
-                      cursorColor: Colors.deepOrange.shade600,
+                      cursorColor: Colors.teal.shade600,
                       decoration: InputDecoration(
                         hintText: 'Enter your full name',
                         prefixIcon: Icon(Icons.person),
@@ -490,7 +490,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           borderSide: BorderSide(color: Colors.grey.shade400),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.deepOrange.shade600, width: 2),
+                          borderSide: BorderSide(color: Colors.teal.shade600, width: 2),
                         ),
                       ),
                       validator: (value) {
@@ -513,7 +513,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _phoneController,
-                      cursorColor: Colors.deepOrange.shade600,
+                      cursorColor: Colors.teal.shade600,
                       decoration: InputDecoration(
                         hintText: '+264 81 234 5678',
                         prefixIcon: Icon(Icons.phone),
@@ -522,7 +522,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           borderSide: BorderSide(color: Colors.grey.shade400),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.deepOrange.shade600, width: 2),
+                          borderSide: BorderSide(color: Colors.teal.shade600, width: 2),
                         ),
                         helperText: 'Used for WhatsApp and phone calls',
                       ),
@@ -555,7 +555,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               children: [
                                 Icon(
                                   Icons.brightness_6,
-                                  color: Colors.deepOrange,
+                                  color: Colors.teal,
                                 ),
                                 const SizedBox(width: 16),
                                 Expanded(
@@ -589,7 +589,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   onChanged: (isDark) {
                                     ref.read(themeModeProvider.notifier).toggleTheme();
                                   },
-                                  activeThumbColor: Colors.deepOrange,
+                                  activeThumbColor: Colors.teal,
                                 ),
                               ],
                             ),
@@ -637,7 +637,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _bioController,
-                      cursorColor: Colors.deepOrange.shade600,
+                      cursorColor: Colors.teal.shade600,
                       decoration: InputDecoration(
                         hintText: 'Tell clients about yourself...',
                         prefixIcon: Icon(Icons.info_outline),
@@ -646,7 +646,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           borderSide: BorderSide(color: Colors.grey.shade400),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.deepOrange.shade600, width: 2),
+                          borderSide: BorderSide(color: Colors.teal.shade600, width: 2),
                         ),
                       ),
                       maxLines: 4,
@@ -667,7 +667,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: _hourlyRateController,
-                        cursorColor: Colors.deepOrange.shade600,
+                        cursorColor: Colors.teal.shade600,
                         decoration: InputDecoration(
                           hintText: 'Enter hourly rate',
                           prefixIcon: Icon(Icons.attach_money),
@@ -676,7 +676,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             borderSide: BorderSide(color: Colors.grey.shade400),
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.deepOrange.shade600, width: 2),
+                            borderSide: BorderSide(color: Colors.teal.shade600, width: 2),
                           ),
                           helperText: 'Your hourly rate in dollars',
                         ),
@@ -718,7 +718,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   borderSide: BorderSide(color: Colors.grey.shade400),
                                 ),
                                 focusedBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.deepOrange.shade600, width: 2),
+                                  borderSide: BorderSide(color: Colors.teal.shade600, width: 2),
                                 ),
                               ),
                               onSubmitted: (_) => _addSkill(),
@@ -728,7 +728,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           ElevatedButton(
                             onPressed: _addSkill,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.deepOrange,
+                              backgroundColor: Colors.teal,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                             ),
@@ -746,7 +746,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               label: Text(skill),
                               deleteIcon: const Icon(Icons.close, size: 18),
                               onDeleted: () => _removeSkill(skill),
-                              backgroundColor: Colors.deepOrange.shade50,
+                              backgroundColor: Colors.teal.shade50,
                             );
                           }).toList(),
                         ),
@@ -762,7 +762,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         onPressed: _isSaving ? null : _saveProfile,
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          backgroundColor: Colors.deepOrange,
+                          backgroundColor: Colors.teal,
                           foregroundColor: Colors.white,
                         ),
                         child: _isSaving
@@ -811,12 +811,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             color: isSelected
-                ? Colors.deepOrange.withOpacity(0.1)
+                ? Colors.teal.withOpacity(0.1)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: isSelected
-                  ? Colors.deepOrange
+                  ? Colors.teal
                   : Colors.grey.shade300,
               width: isSelected ? 2 : 1,
             ),
@@ -826,7 +826,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               Icon(
                 icon,
                 color: isSelected
-                    ? Colors.deepOrange
+                    ? Colors.teal
                     : Colors.grey.shade600,
                 size: 28,
               ),
@@ -837,7 +837,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   color: isSelected
-                      ? Colors.deepOrange
+                      ? Colors.teal
                       : Colors.grey.shade600,
                 ),
               ),

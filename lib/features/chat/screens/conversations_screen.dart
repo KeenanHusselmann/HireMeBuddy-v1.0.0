@@ -124,7 +124,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.deepOrange.shade600,
+        backgroundColor: Colors.teal.shade600,
         foregroundColor: Colors.white,
         title: const Text('Messages'),
         actions: [
@@ -152,7 +152,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.deepOrange))
+          ? const Center(child: CircularProgressIndicator(color: Colors.teal))
           : _conversations.isEmpty
               ? Center(
                   child: Column(
@@ -196,7 +196,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
                           children: [
                             CircleAvatar(
                               radius: 28,
-                              backgroundColor: Colors.deepOrange.shade100,
+                              backgroundColor: Colors.teal.shade100,
                               backgroundImage: contact['avatar_url'] != null
                                   ? NetworkImage(contact['avatar_url'])
                                   : null,
@@ -204,7 +204,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
                                   ? Text(
                                       contactName.substring(0, 1).toUpperCase(),
                                       style: TextStyle(
-                                        color: Colors.deepOrange.shade700,
+                                        color: Colors.teal.shade700,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 20,
                                       ),
@@ -262,7 +262,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
                               time,
                               style: TextStyle(
                                 fontSize: 12,
-                                color: unreadCount > 0 ? Colors.deepOrange : Colors.grey.shade600,
+                                color: unreadCount > 0 ? Colors.teal : Colors.grey.shade600,
                                 fontWeight: unreadCount > 0 ? FontWeight.bold : FontWeight.normal,
                               ),
                             ),
