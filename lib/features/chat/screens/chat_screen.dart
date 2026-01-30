@@ -101,7 +101,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       setState(() {
         _messages = messages;
       });
-      _scrollToBottom();
+      // Scroll after the build is complete
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom();
+      });
     } catch (e) {
       // Silent fail
     }
@@ -151,16 +154,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scrollController.hasClients) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
-      });
+    if (_scrollController.hasClients && _messages.isNotEmpty) {
+      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
     }
   }
 
