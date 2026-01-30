@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/gestures.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/utils/logger.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -150,14 +152,80 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
-      Future.delayed(const Duration(milliseconds: 100), () {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
       });
     }
+  }
+
+  // Build message text with clickable links
+  Widget _buildMessageText(String text, bool isMe) {
+    final urlPattern = RegExp(
+      r'(https?://[^\s]+)',
+      caseSensitive: false,
+    );
+    
+    final matches = urlPattern.allMatches(text);
+    if (matches.isEmpty) {
+      return Text(
+        text,
+        style: TextStyle(
+          color: isMe ? Colors.white : Colors.black87,
+          fontSize: 15,
+        ),
+      );
+    }
+
+    final spans = <TextSpan>[];
+    int lastIndex = 0;
+
+    for (final match in matches) {
+      if (match.start > lastIndex) {
+        spans.add(TextSpan(
+          text: text.substring(lastIndex, match.start),
+          style: TextStyle(
+            color: isMe ? Colors.white : Colors.black87,
+          ),
+        ));
+      }
+
+      final url = match.group(0)!;
+      spans.add(TextSpan(
+        text: url,
+        style: TextStyle(
+          color: isMe ? Colors.white : Colors.blue,
+          decoration: TextDecoration.underline,
+        ),
+        recognizer: TapGestureRecognizer()
+          ..onTap = () async {
+            final uri = Uri.parse(url);
+            if (await canLaunchUrl(uri)) {
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+            }
+          },
+      ));
+
+      lastIndex = match.end;
+    }
+
+    if (lastIndex < text.length) {
+      spans.add(TextSpan(
+        text: text.substring(lastIndex),
+        style: TextStyle(
+          color: isMe ? Colors.white : Colors.black87,
+        ),
+      ));
+    }
+
+    return RichText(
+      text: TextSpan(children: spans, style: const TextStyle(fontSize: 15)),
+    );
   }
 
   @override
@@ -272,12 +340,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
+                                    _buildMessageText(
                                       message['content'] as String,
-                                      style: TextStyle(
-                                        color: isMe ? Colors.white : Colors.black87,
-                                        fontSize: 15,
-                                      ),
+                                      isMe,
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
@@ -315,9 +380,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     ),
                   child: Row(
                     children: [
+                      IconButton(
+                        icon: Icon(
+                          Icons.attach_file,
+                          color: Colors.grey.shade600,
+                        ),
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('File attachment coming soon!')),
+                          );
+                        },
+                      ),
                       Expanded(
                         child: TextField(
                           controller: _messageController,
+                          textCapitalization: TextCapitalization.sentences,
                           style: TextStyle(
                             color: Theme.of(context).brightness == Brightness.dark 
                                 ? Colors.white 
