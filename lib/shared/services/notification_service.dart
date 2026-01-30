@@ -266,12 +266,17 @@ class NotificationService {
           callback: (payload) {
             final booking = payload.newRecord;
             
-            _logger.debug('New booking received, showing notification');
-            showBookingNotification(
-              title: '🎉 New Booking Request!',
-              body: 'You have a new booking on ${booking['booking_date']} at ${booking['booking_time']}',
-              bookingId: booking['id'],
-            );
+            // ⚠️ DO NOT show notification here - FCM handles this automatically
+            // This subscription is only for UI updates (refreshing booking list)
+            // Showing notification here causes duplicates when user is logged in
+            _logger.debug('New booking detected on ${booking['booking_date']} at ${booking['booking_time']} (notification handled by FCM)');
+            
+            // DON'T call showBookingNotification - FCM handles it
+            // showBookingNotification(
+            //   title: '🎉 New Booking Request!',
+            //   body: 'You have a new booking on ${booking['booking_date']} at ${booking['booking_time']}',
+            //   bookingId: booking['id'],
+            // );
           },
         )
         .subscribe((status, error) {
@@ -309,13 +314,17 @@ class NotificationService {
             final body = notification['body'] as String? ?? '';
             final type = notification['type'] as String? ?? 'general';
             
-            _logger.debug('Showing notification - Title: $title, Type: $type');
+            // ⚠️ DO NOT show notification here - FCM handles this automatically
+            // This subscription is only for UI updates (e.g., notification badge counts)
+            // Showing notification here causes duplicates when user is logged in
+            _logger.debug('Notification detected - Title: $title, Type: $type (notification handled by FCM)');
             
-            await showGeneralNotification(
-              title: title,
-              body: body,
-              type: type,
-            );
+            // DON'T call showGeneralNotification - FCM handles it
+            // await showGeneralNotification(
+            //   title: title,
+            //   body: body,
+            //   type: type,
+            // );
           },
         )
         .subscribe((status, error) {
@@ -353,32 +362,27 @@ class NotificationService {
             final message = payload.newRecord;
             final senderId = message['sender_id'];
             
-            // Get sender details
-            try {
-              final senderProfile = await supabase
-                  .from('profiles')
-                  .select('full_name')
-                  .eq('id', senderId)
-                  .single();
-              
-              final senderName = senderProfile['full_name'] as String? ?? 'Someone';
-              final messageContent = message['content'] as String? ?? 'New message';
-              
-              _logger.debug('Showing message notification from: $senderName');
-              showMessageNotification(
-                title: '💬 $senderName',
-                body: messageContent,
-                senderId: senderId,
-              );
-            } catch (e) {
-              _logger.error('Error fetching sender details', e);
-              // Show notification anyway with generic message
-              showMessageNotification(
-                title: '💬 New Message',
-                body: message['content'] as String? ?? 'You have a new message',
-                senderId: senderId,
-              );
-            }
+            // ⚠️ DO NOT show notification here - FCM handles this automatically
+            // This subscription is only for UI updates (e.g., unread counts)
+            // Showing notification here causes duplicates when user is logged in
+            _logger.debug('New message detected from sender: $senderId (notification handled by FCM)');
+            
+            // Get sender details for logging only
+            // try {
+            //   final senderProfile = await supabase
+            //       .from('profiles')
+            //       .select('full_name')
+            //       .eq('id', senderId)
+            //       .single();
+            //   
+            //   final senderName = senderProfile['full_name'] as String? ?? 'Someone';
+            //   final messageContent = message['content'] as String? ?? 'New message';
+            //   
+            //   _logger.debug('Message from: $senderName');
+            //   // DON'T call showMessageNotification - FCM handles it
+            // } catch (e) {
+            //   _logger.error('Error fetching sender details', e);
+            // }
           },
         )
         .subscribe((status, error) {
