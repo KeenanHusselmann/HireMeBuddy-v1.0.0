@@ -27,7 +27,7 @@ class _ProviderChatScreenState extends ConsumerState<ProviderChatScreen> {
   bool _isLoading = true;
   bool _isSending = false;
   String? _myProfileId;
-  String _contactRole = 'User';
+  String? _contactRole;
   RealtimeChannel? _messagesChannel;
 
   @override
@@ -267,7 +267,7 @@ class _ProviderChatScreenState extends ConsumerState<ProviderChatScreen> {
                     style: const TextStyle(fontSize: 16),
                   ),
                   Text(
-                    _contactRole,
+                    _contactRole ?? 'Loading...',
                     style: const TextStyle(fontSize: 12, color: Colors.white70),
                   ),
                 ],
