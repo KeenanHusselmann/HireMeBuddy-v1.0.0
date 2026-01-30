@@ -9,7 +9,6 @@ import '../../../shared/services/notification_service.dart';
 
 import '../../../core/services/deep_link_handler.dart';
 import '../../bookings/screens/my_bookings_screen.dart';
-import '../widgets/provider_video_feed.dart';
 import '../../chat/screens/conversations_screen.dart';
 
 // Real-time stream provider for client pending bookings count

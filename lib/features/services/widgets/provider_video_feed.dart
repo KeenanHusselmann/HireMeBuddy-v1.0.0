@@ -228,16 +228,6 @@ class _VideoCardState extends State<VideoCard> {
     super.dispose();
   }
 
-  void _togglePlayPause() {
-    setState(() {
-      if (_controller.value.isPlaying) {
-        _controller.pause();
-      } else {
-        _controller.play();
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final providerProfile = widget.video['provider_profiles'] as Map<String, dynamic>;

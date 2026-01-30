@@ -62,16 +62,6 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> wit
     }
   }
 
-  Future<void> _clearState() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('client_reset_email');
-      await prefs.remove('client_reset_code_sent');
-    } catch (e) {
-      // Silent fail
-    }
-  }
-
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
@@ -137,31 +127,6 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> wit
     if (mounted) {
       context.push('/reset-password');
     }
-  }
-
-  Widget _buildRequirement(String text, bool isMet) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: [
-          Icon(
-            isMet ? Icons.check_circle : Icons.circle_outlined,
-            size: 16,
-            color: isMet ? Colors.green : Colors.grey,
-          ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                color: isMet ? Colors.green : Colors.grey.shade600,
-                fontSize: 12,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   @override

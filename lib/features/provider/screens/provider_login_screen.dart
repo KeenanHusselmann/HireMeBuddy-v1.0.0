@@ -130,11 +130,18 @@ class _ProviderLoginScreenState extends ConsumerState<ProviderLoginScreen> {
                             TextFormField(
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
+                              cursorColor: Colors.deepOrange.shade600,
                               decoration: InputDecoration(
                                 labelText: 'Email',
+                                labelStyle: TextStyle(color: Colors.grey.shade700),
+                                floatingLabelStyle: TextStyle(color: Colors.deepOrange.shade600),
                                 prefixIcon: Icon(Icons.email_outlined, color: Colors.deepOrange.shade600),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey.shade400),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
@@ -159,8 +166,11 @@ class _ProviderLoginScreenState extends ConsumerState<ProviderLoginScreen> {
                             TextFormField(
                               controller: _passwordController,
                               obscureText: _obscurePassword,
+                              cursorColor: Colors.deepOrange.shade600,
                               decoration: InputDecoration(
                                 labelText: 'Password',
+                                labelStyle: TextStyle(color: Colors.grey.shade700),
+                                floatingLabelStyle: TextStyle(color: Colors.deepOrange.shade600),
                                 prefixIcon: Icon(Icons.lock_outline, color: Colors.deepOrange.shade600),
                                 suffixIcon: IconButton(
                                   icon: Icon(
@@ -175,6 +185,10 @@ class _ProviderLoginScreenState extends ConsumerState<ProviderLoginScreen> {
                                 ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey.shade400),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),

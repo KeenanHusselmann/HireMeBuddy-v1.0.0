@@ -17,13 +17,23 @@ class ProviderBottomNav extends ConsumerStatefulWidget {
 class _ProviderBottomNavState extends ConsumerState<ProviderBottomNav> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    ProviderDashboardScreen(),
-    ProviderBookingsScreen(),
-    ProviderPortfolioScreen(),
-    ConversationsScreen(),
-    ProfileScreen(),
-  ];
+  // Don't use const - we need to rebuild these on demand
+  Widget _buildScreen(int index) {
+    switch (index) {
+      case 0:
+        return const ProviderDashboardScreen();
+      case 1:
+        return const ProviderBookingsScreen();
+      case 2:
+        return const ProviderPortfolioScreen();
+      case 3:
+        return const ConversationsScreen();
+      case 4:
+        return const ProfileScreen();
+      default:
+        return const ProviderDashboardScreen();
+    }
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -49,15 +59,12 @@ class _ProviderBottomNavState extends ConsumerState<ProviderBottomNav> {
     );
 
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: _buildScreen(_currentIndex),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.teal,
+        selectedItemColor: Colors.deepOrange,
         unselectedItemColor: Colors.grey,
         selectedFontSize: 12,
         unselectedFontSize: 12,

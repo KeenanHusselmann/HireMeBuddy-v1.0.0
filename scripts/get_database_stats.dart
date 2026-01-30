@@ -14,15 +14,15 @@ void main() async {
     // Get provider count
     final providerCount = await supabase
         .from('provider_profiles')
-        .select('id', const FetchOptions(count: CountOption.exact))
-        .count();
+        .select('id')
+        .count(CountOption.exact);
 
     // Get client count
     final clientCount = await supabase
         .from('profiles')
-        .select('id', const FetchOptions(count: CountOption.exact))
+        .select('id')
         .eq('role', 'client')
-        .count();
+        .count(CountOption.exact);
 
     print('Provider Count: $providerCount');
     print('Client Count: $clientCount');

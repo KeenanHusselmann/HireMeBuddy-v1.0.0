@@ -10,7 +10,8 @@ import '../../features/auth/screens/forgot_password_screen.dart';
 import '../../features/auth/screens/reset_password_screen.dart';
 import '../../features/auth/screens/change_password_screen.dart';
 import '../../features/auth/screens/email_verification_screen.dart';
-import '../../features/services/screens/home_screen.dart';
+import '../../features/auth/screens/terms_and_conditions_screen.dart';
+import '../../features/auth/screens/privacy_policy_screen.dart';
 import '../../features/services/screens/service_list_screen.dart';
 import '../../features/services/screens/provider_detail_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
@@ -277,6 +278,20 @@ class AppRouter {
           path: '/admin-dashboard',
           name: 'admin-dashboard',
           builder: (context, state) => const AdminDashboardScreen(),
+        ),
+
+        // Terms and Conditions
+        GoRoute(
+          path: '/terms-and-conditions',
+          name: 'terms-and-conditions',
+          builder: (context, state) => const TermsAndConditionsScreen(),
+        ),
+
+        // Privacy Policy
+        GoRoute(
+          path: '/privacy-policy',
+          name: 'privacy-policy',
+          builder: (context, state) => const PrivacyPolicyScreen(),
         ),
       ],
       

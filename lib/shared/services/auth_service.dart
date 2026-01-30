@@ -155,6 +155,7 @@ class AuthService {
                 'last_name': lastName,
                 'email': email,  // Store email in profiles table
                 'role': role,
+                'terms_accepted_at': DateTime.now().toIso8601String(),
               };
               
               // Add phone number if provided
@@ -164,7 +165,7 @@ class AuthService {
               
               _logger.debug('Inserting profile data for user ${AppLogger.sanitizeUserId(response.user!.id)}');
               
-              final insertResult = await _supabase.from('profiles').upsert(
+              await _supabase.from('profiles').upsert(
                 profileData,
                 onConflict: 'id',
               ).select();

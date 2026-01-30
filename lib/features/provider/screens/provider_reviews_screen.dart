@@ -57,10 +57,12 @@ class _ProviderReviewsScreenState extends ConsumerState<ProviderReviewsScreen> {
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(
+          backgroundColor: Colors.deepOrange.shade600,
+          foregroundColor: Colors.white,
           title: const Text('My Reviews'),
         ),
         body: const Center(
-          child: CircularProgressIndicator(),
+          child: CircularProgressIndicator(color: Colors.deepOrange),
         ),
       );
     }
@@ -68,6 +70,8 @@ class _ProviderReviewsScreenState extends ConsumerState<ProviderReviewsScreen> {
     if (_providerId == null) {
       return Scaffold(
         appBar: AppBar(
+          backgroundColor: Colors.deepOrange.shade600,
+          foregroundColor: Colors.white,
           title: const Text('My Reviews'),
         ),
         body: const Center(
@@ -78,6 +82,8 @@ class _ProviderReviewsScreenState extends ConsumerState<ProviderReviewsScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.deepOrange.shade600,
+        foregroundColor: Colors.white,
         title: const Text('My Reviews'),
         elevation: 0,
         actions: [
@@ -94,7 +100,7 @@ class _ProviderReviewsScreenState extends ConsumerState<ProviderReviewsScreen> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-              child: CircularProgressIndicator(),
+              child: CircularProgressIndicator(color: Colors.deepOrange),
             );
           }
 
@@ -237,7 +243,7 @@ class _ProviderReviewsScreenState extends ConsumerState<ProviderReviewsScreen> {
                                       children: [
                                         CircleAvatar(
                                           radius: 20,
-                                          backgroundColor: Colors.teal.shade100,
+                                          backgroundColor: Colors.deepOrange.shade100,
                                           backgroundImage: clientAvatar != null
                                               ? NetworkImage(clientAvatar)
                                               : null,
@@ -245,7 +251,7 @@ class _ProviderReviewsScreenState extends ConsumerState<ProviderReviewsScreen> {
                                               ? Text(
                                                   clientName.substring(0, 1).toUpperCase(),
                                                   style: TextStyle(
-                                                    color: Colors.teal.shade700,
+                                                    color: Colors.deepOrange.shade700,
                                                     fontWeight: FontWeight.bold,
                                                   ),
                                                 )

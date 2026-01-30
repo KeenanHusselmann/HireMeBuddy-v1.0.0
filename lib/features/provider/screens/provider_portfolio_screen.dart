@@ -45,6 +45,8 @@ class _ProviderPortfolioScreenState extends ConsumerState<ProviderPortfolioScree
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.deepOrange.shade600,
+        foregroundColor: Colors.white,
         title: const Text('My Portfolio'),
         bottom: TabBar(
           controller: _tabController,
@@ -81,6 +83,8 @@ class _ProviderPortfolioScreenState extends ConsumerState<ProviderPortfolioScree
           ? null
           : FloatingActionButton(
               onPressed: () => _showAddDialog(user.id),
+              backgroundColor: Colors.deepOrange,
+              foregroundColor: Colors.white,
               child: const Icon(Icons.add),
             ),
     );
@@ -100,7 +104,7 @@ class _ProviderPortfolioScreenState extends ConsumerState<ProviderPortfolioScree
       future: ref.read(portfolioServiceProvider).getPortfolioImagesByType(userId, mediaType),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator(color: Colors.deepOrange));
         }
 
         if (snapshot.hasError) {

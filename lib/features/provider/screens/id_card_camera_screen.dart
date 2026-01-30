@@ -126,7 +126,6 @@ class _IdCardCameraScreenState extends State<IdCardCameraScreen> {
     }
 
     final size = MediaQuery.of(context).size;
-    final deviceRatio = size.width / size.height;
 
     return Scaffold(
       backgroundColor: Colors.black,

@@ -462,10 +462,12 @@ class _ProviderRegistrationScreenState
         title: const Text('Provider Registration'),
         elevation: 0,
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 450),
-          child: Stack(
+      body: SafeArea(
+        minimum: const EdgeInsets.only(bottom: 16.0),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 450),
+            child: Stack(
             children: [
               Column(
                 children: [
@@ -496,13 +498,22 @@ class _ProviderRegistrationScreenState
                   ),
                   // Navigation Buttons
                   Container(
-                    padding: EdgeInsets.only(
+                    padding: const EdgeInsets.only(
                       left: 20.0,
                       right: 20.0,
                       top: 16.0,
-                      bottom: 18.0 + MediaQuery.of(context).padding.bottom,
+                      bottom: 24.0,
                     ),
-                    color: Colors.transparent,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).scaffoldBackgroundColor,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, -2),
+                        ),
+                      ],
+                    ),
                     child: SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -527,12 +538,13 @@ class _ProviderRegistrationScreenState
                 Container(
                   color: Colors.black.withOpacity(0.3),
                   child: const Center(
-                    child: CircularProgressIndicator(),
+                    child: CircularProgressIndicator(color: Colors.deepOrange),
                   ),
                 ),
             ],
           ),
         ),
+      ),
       ),
     );
   }
@@ -784,6 +796,7 @@ class _ProviderRegistrationScreenState
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, stack) => Text('Error loading categories: $error'),
             ),
+            const SizedBox(height: 150),
           ],
         ),
       ),
@@ -832,6 +845,7 @@ class _ProviderRegistrationScreenState
               image: _headshotImage,
               onTap: () => _pickImage('headshot', ImageSource.camera),
             ),
+            const SizedBox(height: 150),
           ],
         ),
       ),
@@ -979,6 +993,7 @@ class _ProviderRegistrationScreenState
                   );
                 },
               ),
+            const SizedBox(height: 150),
           ],
         ),
       ),
@@ -993,11 +1008,26 @@ class _ProviderRegistrationScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Terms & Conditions',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
+            InkWell(
+              onTap: () {
+                context.push('/terms-and-conditions');
+              },
+              child: Row(
+                children: [
+                  Text(
+                    'Terms & Conditions',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.open_in_new,
+                    size: 20,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -1052,7 +1082,25 @@ class _ProviderRegistrationScreenState
                   _agreedToTerms = value ?? false;
                 });
               },
-              title: const Text('I agree to the Terms of Service'),
+              title: GestureDetector(
+                onTap: () {
+                  context.push('/terms-and-conditions');
+                },
+                child: const Text.rich(
+                  TextSpan(
+                    text: 'I agree to the ',
+                    children: [
+                      TextSpan(
+                        text: 'Terms of Service',
+                        style: TextStyle(
+                          color: Colors.blue,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               controlAffinity: ListTileControlAffinity.leading,
               contentPadding: EdgeInsets.zero,
             ),
@@ -1102,10 +1150,29 @@ class _ProviderRegistrationScreenState
                   _agreedToPrivacy = value ?? false;
                 });
               },
-              title: const Text('I agree to the Privacy Policy'),
+              title: GestureDetector(
+                onTap: () {
+                  context.push('/privacy-policy');
+                },
+                child: const Text.rich(
+                  TextSpan(
+                    text: 'I agree to the ',
+                    children: [
+                      TextSpan(
+                        text: 'Privacy Policy',
+                        style: TextStyle(
+                          color: Colors.blue,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               controlAffinity: ListTileControlAffinity.leading,
               contentPadding: EdgeInsets.zero,
             ),
+            const SizedBox(height: 150),
           ],
         ),
       ),

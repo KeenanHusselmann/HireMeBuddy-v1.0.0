@@ -4,8 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/services/deep_link_handler.dart';
 import '../../../shared/widgets/app_logo.dart';
-import 'provider_bookings_screen.dart';
-import '../../chat/screens/conversations_screen.dart';
 
 class ProviderSplashScreen extends ConsumerStatefulWidget {
   const ProviderSplashScreen({super.key});

@@ -71,6 +71,98 @@ class _ProviderSignupScreenState extends ConsumerState<ProviderSignupScreen> {
     super.dispose();
   }
 
+  void _showTermsAndConditions() {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.deepOrange.shade600,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Terms & Conditions',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildTermsSection('1. Service Provider Agreement', 
+                        'By registering as a service provider on HireMeBuddy, you agree to provide professional services to clients through our platform.'),
+                      _buildTermsSection('2. Professional Conduct',
+                        'You agree to maintain professional standards and deliver quality services to all clients.'),
+                      _buildTermsSection('3. Verification',
+                        'All identification documents and service photos will be verified by our team before your profile is activated.'),
+                      _buildTermsSection('4. Payment Terms',
+                        'Platform fees apply to all transactions. Payments will be processed according to our payment schedule.'),
+                      _buildTermsSection('5. Cancellation Policy',
+                        'Cancellations must be made according to our cancellation policy. Late cancellations may result in penalties.'),
+                      _buildTermsSection('6. Account Termination',
+                        'We reserve the right to suspend or terminate accounts that violate our terms of service.'),
+                      _buildTermsSection('7. Liability',
+                        'Service providers are responsible for their own actions and services provided through the platform. HireMeBuddy is not liable for disputes between providers and clients.'),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTermsSection(String title, String content) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.deepOrange.shade700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            content,
+            style: const TextStyle(fontSize: 14, height: 1.5),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _handleSignup() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -142,24 +234,26 @@ class _ProviderSignupScreenState extends ConsumerState<ProviderSignupScreen> {
     return Stack(
       children: [
         Scaffold(
-          body: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.deepOrange.shade700,
-                  Colors.orange.shade500,
-                ],
+          body: SafeArea(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.deepOrange.shade700,
+                    Colors.orange.shade500,
+                  ],
+                ),
               ),
-            ),
-            child: Center(
+              child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 450),
                 child: Column(
                   children: [
                     Expanded(
                       child: SingleChildScrollView(
+                        padding: const EdgeInsets.only(bottom: 100),
                         child: Column(
                           children: [
                             const SizedBox(height: 50),
@@ -204,10 +298,17 @@ class _ProviderSignupScreenState extends ConsumerState<ProviderSignupScreen> {
                             // First Name
                             TextFormField(
                               controller: _firstNameController,
+                              cursorColor: Colors.deepOrange.shade600,
                               decoration: InputDecoration(
                                 labelText: 'First Name',
+                                labelStyle: TextStyle(color: Colors.grey.shade700),
+                                floatingLabelStyle: TextStyle(color: Colors.deepOrange.shade600),
                                 prefixIcon: Icon(Icons.person_outline, color: Colors.deepOrange.shade600),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(color: Colors.grey.shade400),
+                                ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(10),
                                   borderSide: BorderSide(color: Colors.deepOrange.shade600, width: 2),
@@ -223,8 +324,11 @@ class _ProviderSignupScreenState extends ConsumerState<ProviderSignupScreen> {
                             // Last Name
                             TextFormField(
                               controller: _lastNameController,
+                              cursorColor: Colors.deepOrange.shade600,
                               decoration: InputDecoration(
                                 labelText: 'Last Name',
+                                labelStyle: TextStyle(color: Colors.grey.shade700),
+                                floatingLabelStyle: TextStyle(color: Colors.deepOrange.shade600),
                                 prefixIcon: Icon(Icons.person_outline, color: Colors.deepOrange.shade600),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                                 focusedBorder: OutlineInputBorder(
@@ -243,10 +347,17 @@ class _ProviderSignupScreenState extends ConsumerState<ProviderSignupScreen> {
                             TextFormField(
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
+                              cursorColor: Colors.deepOrange.shade600,
                               decoration: InputDecoration(
                                 labelText: 'Email',
+                                labelStyle: TextStyle(color: Colors.grey.shade700),
+                                floatingLabelStyle: TextStyle(color: Colors.deepOrange.shade600),
                                 prefixIcon: Icon(Icons.email_outlined, color: Colors.deepOrange.shade600),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(color: Colors.grey.shade400),
+                                ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(10),
                                   borderSide: BorderSide(color: Colors.deepOrange.shade600, width: 2),
@@ -266,10 +377,17 @@ class _ProviderSignupScreenState extends ConsumerState<ProviderSignupScreen> {
                             TextFormField(
                               controller: _phoneController,
                               keyboardType: TextInputType.phone,
+                              cursorColor: Colors.deepOrange.shade600,
                               decoration: InputDecoration(
                                 labelText: 'Phone Number',
+                                labelStyle: TextStyle(color: Colors.grey.shade700),
+                                floatingLabelStyle: TextStyle(color: Colors.deepOrange.shade600),
                                 prefixIcon: Icon(Icons.phone_outlined, color: Colors.deepOrange.shade600),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(color: Colors.grey.shade400),
+                                ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(10),
                                   borderSide: BorderSide(color: Colors.deepOrange.shade600, width: 2),
@@ -286,8 +404,11 @@ class _ProviderSignupScreenState extends ConsumerState<ProviderSignupScreen> {
                             TextFormField(
                               controller: _passwordController,
                               obscureText: _obscurePassword,
+                              cursorColor: Colors.deepOrange.shade600,
                               decoration: InputDecoration(
                                 labelText: 'Password',
+                                labelStyle: TextStyle(color: Colors.grey.shade700),
+                                floatingLabelStyle: TextStyle(color: Colors.deepOrange.shade600),
                                 prefixIcon: Icon(Icons.lock_outline, color: Colors.deepOrange.shade600),
                                 suffixIcon: IconButton(
                                   icon: Icon(
@@ -362,8 +483,11 @@ class _ProviderSignupScreenState extends ConsumerState<ProviderSignupScreen> {
                             TextFormField(
                               controller: _confirmPasswordController,
                               obscureText: _obscureConfirmPassword,
+                              cursorColor: Colors.deepOrange.shade600,
                               decoration: InputDecoration(
                                 labelText: 'Confirm Password',
+                                labelStyle: TextStyle(color: Colors.grey.shade700),
+                                floatingLabelStyle: TextStyle(color: Colors.deepOrange.shade600),
                                 prefixIcon: Icon(Icons.lock_outline, color: Colors.deepOrange.shade600),
                                 suffixIcon: IconButton(
                                   icon: Icon(
@@ -421,9 +545,25 @@ class _ProviderSignupScreenState extends ConsumerState<ProviderSignupScreen> {
                                   activeColor: Colors.deepOrange.shade600,
                                 ),
                                 Expanded(
-                                  child: Text(
-                                    'I agree to Terms & Conditions',
-                                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      _showTermsAndConditions();
+                                    },
+                                    child: Text.rich(
+                                      TextSpan(
+                                        text: 'I agree to ',
+                                        style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                                        children: [
+                                          TextSpan(
+                                            text: 'Terms & Conditions',
+                                            style: TextStyle(
+                                              color: Colors.deepOrange.shade600,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -493,41 +633,68 @@ class _ProviderSignupScreenState extends ConsumerState<ProviderSignupScreen> {
               ),
             ),
           ),
+          ),
         ),
         // Loading overlay
         if (isLoading)
           Container(
-            color: Colors.black.withOpacity(0.7),
+            color: Colors.black.withOpacity(0.5),
             child: Center(
               child: Container(
-                padding: const EdgeInsets.all(32),
+                margin: const EdgeInsets.symmetric(horizontal: 40),
+                padding: const EdgeInsets.all(40),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white,
+                      Colors.orange.shade50,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.deepOrange.withOpacity(0.3),
+                      blurRadius: 30,
+                      spreadRadius: 5,
+                    ),
+                  ],
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const CircularProgressIndicator(
-                      color: Colors.deepOrange,
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.deepOrange.shade50,
+                      ),
+                      child: const CircularProgressIndicator(
+                        color: Colors.deepOrange,
+                        strokeWidth: 3,
+                      ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 28),
                     Text(
-                      'Creating your account...',
+                      'Creating your account',
+                      textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Colors.grey[800],
+                        letterSpacing: 0.5,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     Text(
-                      'Please wait while we set up your profile',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
+                      'Setting up your profile...',
                       textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.grey[600],
+                        height: 1.4,
+                      ),
                     ),
                   ],
                 ),

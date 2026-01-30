@@ -3,11 +3,9 @@ import '../../core/utils/logger.dart';
 import '../models/booking.dart';
 import '../models/booking_with_client.dart';
 import '../models/booking_with_provider.dart';
-import 'fcm_trigger_service.dart';
 
 class BookingService {
   final _supabase = Supabase.instance.client;
-  final _fcmTrigger = FcmTriggerService();
 
   Future<Booking> createBooking({
     required String providerId,

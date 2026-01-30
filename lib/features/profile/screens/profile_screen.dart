@@ -23,6 +23,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _isLoading = true;
   bool _isSaving = false;
   bool _isProvider = false;
+  bool _hasProviderProfile = false;
   Map<String, dynamic>? _profile;
   List<String> _skills = [];
   final ImagePicker _picker = ImagePicker();
@@ -44,10 +45,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _loadProfile() async {
+    // Early exit if widget is no longer mounted
+    if (!mounted) return;
+    
     try {
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) {
-        setState(() => _isLoading = false);
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+
+      // Double-check auth state before making any database calls
+      final session = Supabase.instance.client.auth.currentSession;
+      if (session == null || !mounted) {
+        if (mounted) setState(() => _isLoading = false);
         return;
       }
 
@@ -57,6 +68,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           .eq('user_id', user.id)
           .single();
 
+      if (!mounted) return;
+      
       setState(() {
         _profile = response;
         _isProvider = response['role'] == 'provider';
@@ -66,7 +79,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       });
 
       // Load provider profile if user is a provider
-      if (_isProvider) {
+      if (_isProvider && mounted) {
         final profileId = response['id'];
         final providerResponse = await Supabase.instance.client
             .from('provider_profiles')
@@ -74,16 +87,34 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             .eq('id', profileId)
             .maybeSingle();
 
+        if (!mounted) return;
+        
         if (providerResponse != null) {
           setState(() {
+            _hasProviderProfile = true;
             _hourlyRateController.text = providerResponse['hourly_rate']?.toString() ?? '';
             _skills = (providerResponse['skills'] as List<dynamic>?)?.cast<String>() ?? [];
+          });
+        } else {
+          setState(() {
+            _hasProviderProfile = false;
           });
         }
       }
 
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     } catch (e) {
+      // Silently fail if user is logging out or widget is disposed
+      if (!mounted) return;
+      
+      // Check if error is due to logout/auth issue
+      if (e.toString().contains('JWT') || 
+          e.toString().contains('auth') || 
+          e.toString().contains('session')) {
+        setState(() => _isLoading = false);
+        return;
+      }
+      
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -256,10 +287,86 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     });
   }
 
+  Widget _buildRegistrationPrompt() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.person_add_outlined,
+              size: 80,
+              color: Colors.deepOrange.shade300,
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Complete Your Registration',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'You need to complete your provider registration before you can edit your profile.',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey.shade600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pushNamed(context, '/provider-registration');
+              },
+              icon: const Icon(Icons.arrow_forward),
+              label: const Text('Complete Registration'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepOrange.shade600,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                textStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Wrap entire screen to catch any errors during logout
+    return Builder(
+      builder: (context) {
+        try {
+          // Check if user is still authenticated
+          final currentUser = Supabase.instance.client.auth.currentUser;
+          if (currentUser == null && !_isLoading) {
+            // User logged out, return empty screen
+            return const Scaffold(body: SizedBox.shrink());
+          }
+          
+          return _buildProfileScreen(context);
+        } catch (e) {
+          debugPrint('Error rendering ProfileScreen: $e');
+          return const Scaffold(body: SizedBox.shrink());
+        }
+      },
+    );
+  }
+
+  Widget _buildProfileScreen(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.deepOrange.shade600,
+        foregroundColor: Colors.white,
         title: const Text('My Profile'),
         centerTitle: true,
         actions: [
@@ -294,8 +401,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
       body: SafeArea(
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
+            ? const Center(child: CircularProgressIndicator(color: Colors.deepOrange))
+            : _isProvider && !_hasProviderProfile
+                ? _buildRegistrationPrompt()
+                : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Form(
                 key: _formKey,
@@ -308,7 +417,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         children: [
                           CircleAvatar(
                             radius: 60,
-                            backgroundColor: Colors.teal.shade100,
+                            backgroundColor: Colors.deepOrange.shade100,
                             backgroundImage: _profile?['avatar_url'] != null
                                 ? NetworkImage(_profile!['avatar_url'])
                                 : null,
@@ -321,7 +430,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     style: TextStyle(
                                       fontSize: 40,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.teal.shade700,
+                                      color: Colors.deepOrange.shade700,
                                     ),
                                   )
                                 : null,
@@ -334,7 +443,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               child: Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: Colors.teal,
+                                  color: Colors.deepOrange,
                                   shape: BoxShape.circle,
                                   border: Border.all(color: Colors.white, width: 2),
                                 ),
@@ -372,10 +481,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _fullNameController,
-                      decoration: const InputDecoration(
+                      cursorColor: Colors.deepOrange.shade600,
+                      decoration: InputDecoration(
                         hintText: 'Enter your full name',
                         prefixIcon: Icon(Icons.person),
                         border: OutlineInputBorder(),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.grey.shade400),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.deepOrange.shade600, width: 2),
+                        ),
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
@@ -397,10 +513,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _phoneController,
-                      decoration: const InputDecoration(
+                      cursorColor: Colors.deepOrange.shade600,
+                      decoration: InputDecoration(
                         hintText: '+264 81 234 5678',
                         prefixIcon: Icon(Icons.phone),
                         border: OutlineInputBorder(),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.grey.shade400),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.deepOrange.shade600, width: 2),
+                        ),
                         helperText: 'Used for WhatsApp and phone calls',
                       ),
                       keyboardType: TextInputType.phone,
@@ -432,7 +555,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               children: [
                                 Icon(
                                   Icons.brightness_6,
-                                  color: Theme.of(context).primaryColor,
+                                  color: Colors.deepOrange,
                                 ),
                                 const SizedBox(width: 16),
                                 Expanded(
@@ -466,7 +589,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   onChanged: (isDark) {
                                     ref.read(themeModeProvider.notifier).toggleTheme();
                                   },
-                                  activeThumbColor: Theme.of(context).primaryColor,
+                                  activeColor: Colors.deepOrange,
                                 ),
                               ],
                             ),
@@ -514,10 +637,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _bioController,
-                      decoration: const InputDecoration(
+                      cursorColor: Colors.deepOrange.shade600,
+                      decoration: InputDecoration(
                         hintText: 'Tell clients about yourself...',
                         prefixIcon: Icon(Icons.info_outline),
                         border: OutlineInputBorder(),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.grey.shade400),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.deepOrange.shade600, width: 2),
+                        ),
                       ),
                       maxLines: 4,
                       maxLength: 500,
@@ -537,10 +667,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: _hourlyRateController,
-                        decoration: const InputDecoration(
+                        cursorColor: Colors.deepOrange.shade600,
+                        decoration: InputDecoration(
                           hintText: 'Enter hourly rate',
                           prefixIcon: Icon(Icons.attach_money),
                           border: OutlineInputBorder(),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.grey.shade400),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.deepOrange.shade600, width: 2),
+                          ),
                           helperText: 'Your hourly rate in dollars',
                         ),
                         keyboardType: TextInputType.number,
@@ -573,10 +710,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           Expanded(
                             child: TextField(
                               controller: _skillsController,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 hintText: 'Add a skill',
                                 prefixIcon: Icon(Icons.star),
                                 border: OutlineInputBorder(),
+                                enabledBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.grey.shade400),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.deepOrange.shade600, width: 2),
+                                ),
                               ),
                               onSubmitted: (_) => _addSkill(),
                             ),
@@ -585,7 +728,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           ElevatedButton(
                             onPressed: _addSkill,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.teal,
+                              backgroundColor: Colors.deepOrange,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                             ),
@@ -603,7 +746,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               label: Text(skill),
                               deleteIcon: const Icon(Icons.close, size: 18),
                               onDeleted: () => _removeSkill(skill),
-                              backgroundColor: Colors.teal.shade50,
+                              backgroundColor: Colors.deepOrange.shade50,
                             );
                           }).toList(),
                         ),
@@ -619,7 +762,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         onPressed: _isSaving ? null : _saveProfile,
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          backgroundColor: Colors.teal,
+                          backgroundColor: Colors.deepOrange,
                           foregroundColor: Colors.white,
                         ),
                         child: _isSaving
@@ -668,12 +811,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             color: isSelected
-                ? Theme.of(context).primaryColor.withOpacity(0.1)
+                ? Colors.deepOrange.withOpacity(0.1)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: isSelected
-                  ? Theme.of(context).primaryColor
+                  ? Colors.deepOrange
                   : Colors.grey.shade300,
               width: isSelected ? 2 : 1,
             ),
@@ -683,7 +826,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               Icon(
                 icon,
                 color: isSelected
-                    ? Theme.of(context).primaryColor
+                    ? Colors.deepOrange
                     : Colors.grey.shade600,
                 size: 28,
               ),
@@ -694,7 +837,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   color: isSelected
-                      ? Theme.of(context).primaryColor
+                      ? Colors.deepOrange
                       : Colors.grey.shade600,
                 ),
               ),

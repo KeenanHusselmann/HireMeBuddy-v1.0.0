@@ -67,7 +67,7 @@ class _ProviderEarningsScreenState extends ConsumerState<ProviderEarningsScreen>
             ),
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: CircularProgressIndicator(color: Colors.deepOrange)),
         error: (error, stack) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

@@ -1,4 +1,3 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/utils/logger.dart';
 
 /// Service to trigger FCM notifications via Supabase Edge Functions
@@ -8,7 +7,6 @@ class FcmTriggerService {
   factory FcmTriggerService() => _instance;
   FcmTriggerService._internal();
 
-  final _supabase = Supabase.instance.client;
   final _logger = AppLogger();
 
   /// Send notification when a new message is sent

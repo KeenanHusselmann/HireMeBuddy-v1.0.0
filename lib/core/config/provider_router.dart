@@ -8,11 +8,12 @@ import '../../features/provider/screens/provider_splash_screen.dart';
 import '../../features/provider/screens/provider_login_screen.dart';
 import '../../features/provider/screens/provider_signup_screen.dart';
 import '../../features/provider/screens/provider_registration_screen.dart';
-import '../../features/provider/screens/provider_dashboard_screen.dart';
 import '../../features/provider/screens/add_service_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/auth/screens/forgot_password_screen.dart';
 import '../../features/auth/screens/reset_password_screen.dart';
+import '../../features/auth/screens/terms_and_conditions_screen.dart';
+import '../../features/auth/screens/privacy_policy_screen.dart';
 import '../../shared/widgets/provider_bottom_nav.dart';
 
 /// Helper class to refresh GoRouter when stream changes
@@ -153,6 +154,20 @@ class ProviderAppRouter {
           path: '/profile',
           name: 'profile',
           builder: (context, state) => const ProfileScreen(),
+        ),
+
+        // Terms and Conditions
+        GoRoute(
+          path: '/terms-and-conditions',
+          name: 'terms-and-conditions',
+          builder: (context, state) => const TermsAndConditionsScreen(),
+        ),
+
+        // Privacy Policy
+        GoRoute(
+          path: '/privacy-policy',
+          name: 'privacy-policy',
+          builder: (context, state) => const PrivacyPolicyScreen(),
         ),
       ],
       

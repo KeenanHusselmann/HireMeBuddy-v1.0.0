@@ -13,7 +13,6 @@ import 'provider_earnings_screen.dart';
 import 'provider_portfolio_screen.dart';
 import 'provider_reviews_screen.dart';
 import '../../chat/screens/conversations_screen.dart';
-import 'subscription_required_screen.dart';
 import 'edit_service_screen.dart';
 
 // Real-time provider for pending bookings count
@@ -240,7 +239,7 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
         return _buildDashboard(context, ref, user, userProfile, providerProfileAsync, providerServicesAsync);
       },
       loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(child: CircularProgressIndicator(color: Colors.deepOrange)),
       ),
       error: (error, stack) => Scaffold(
         body: Center(child: Text('Error: $error')),
@@ -259,13 +258,19 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.deepOrange.shade600,
+        foregroundColor: Colors.white,
         title: const Text('Provider Dashboard'),
         actions: [
           PopupMenuButton<String>(
             onSelected: (value) {
               if (value == 'logout') {
-                ref.read(authStateProvider.notifier).signOut();
+                // Navigate to login screen first, then sign out
+                // This prevents widget tree errors during logout
                 context.go('/provider-login');
+                Future.delayed(const Duration(milliseconds: 100), () {
+                  ref.read(authStateProvider.notifier).signOut();
+                });
               } else if (value == 'profile') {
                 context.push('/profile');
               } else if (value == 'portfolio') {
@@ -391,10 +396,14 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Welcome back,',
+                              providerProfileAsync.when(
+                                data: (profile) => profile != null ? 'Welcome back,' : 'Welcome,',
+                                loading: () => 'Welcome,',
+                                error: (_, __) => 'Welcome,',
+                              ),
                               style: TextStyle(
                                 color: Colors.white.withOpacity(0.9),
-                                fontSize: 14,
+                                fontSize: 18,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -406,7 +415,7 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
                               ),
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 20,
+                                fontSize: 26,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -533,6 +542,10 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
                             const SizedBox(height: 16),
                             ElevatedButton.icon(
                               onPressed: () => context.push('/provider-registration'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.deepOrange.shade600,
+                                foregroundColor: Colors.white,
+                              ),
                               icon: const Icon(Icons.app_registration),
                               label: const Text('Complete Registration'),
                             ),
@@ -722,7 +735,7 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
                 loading: () => const Card(
                   child: Padding(
                     padding: EdgeInsets.all(32),
-                    child: Center(child: CircularProgressIndicator()),
+                    child: Center(child: CircularProgressIndicator(color: Colors.deepOrange)),
                   ),
                 ),
                 error: (error, stack) => Card(
@@ -761,12 +774,18 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
                                   style: TextStyle(fontSize: 16),
                                 ),
                                 const SizedBox(height: 12),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    context.push('/add-service');
-                                  },
-                                  child: const Text('Add Service'),
-                                ),
+                                // Only show Add Service button if registration is complete
+                                if (providerProfileAsync.value != null)
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      context.push('/add-service');
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.deepOrange.shade600,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    child: const Text('Add Service'),
+                                  ),
                               ],
                             ),
                           ),
@@ -790,10 +809,10 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
                                       Container(
                                         padding: const EdgeInsets.all(10),
                                         decoration: BoxDecoration(
-                                          color: Colors.teal.shade50,
+                                          color: Colors.orange.shade50,
                                           borderRadius: BorderRadius.circular(8),
                                         ),
-                                        child: Icon(Icons.work, color: Colors.teal.shade700, size: 24),
+                                        child: Icon(Icons.work, color: Colors.deepOrange.shade700, size: 24),
                                       ),
                                       const SizedBox(width: 12),
                                       Expanded(
@@ -813,7 +832,7 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
                                                 'Daily Rate: N\$${service['base_price']}',
                                                 style: TextStyle(
                                                   fontSize: 14,
-                                                  color: Colors.teal.shade700,
+                                                  color: Colors.deepOrange.shade700,
                                                   fontWeight: FontWeight.w600,
                                                 ),
                                               ),
@@ -831,7 +850,7 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
                                                 'Hourly Rate: N\$${service['base_price']}',
                                                 style: TextStyle(
                                                   fontSize: 14,
-                                                  color: Colors.teal.shade700,
+                                                  color: Colors.deepOrange.shade700,
                                                   fontWeight: FontWeight.w600,
                                                 ),
                                               ),
@@ -840,7 +859,7 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
                                                 'Base Price: N\$${service['base_price']}',
                                                 style: TextStyle(
                                                   fontSize: 14,
-                                                  color: Colors.teal.shade700,
+                                                  color: Colors.deepOrange.shade700,
                                                   fontWeight: FontWeight.w600,
                                                 ),
                                               ),
@@ -934,7 +953,7 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
                                       const SizedBox(width: 8),
                                       // Edit Button
                                       IconButton(
-                                        icon: const Icon(Icons.edit_outlined, color: Colors.blue, size: 22),
+                                        icon: const Icon(Icons.edit_outlined, color: Colors.deepOrange, size: 22),
                                         onPressed: () {
                                           Navigator.push(
                                             context,
@@ -1081,7 +1100,7 @@ class _ProviderDashboardScreenState extends ConsumerState<ProviderDashboardScree
                             context,
                             'Bookings',
                             Icons.calendar_today,
-                            Colors.blue,
+                            Colors.deepOrange,
                             () {
                               Navigator.push(
                                 context,

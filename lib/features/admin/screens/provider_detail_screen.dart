@@ -13,39 +13,6 @@ class ProviderDetailScreen extends ConsumerWidget {
     required this.provider,
   });
 
-  Future<void> _handleVerification(
-    BuildContext context,
-    WidgetRef ref,
-    bool isVerified,
-  ) async {
-    final adminService = AdminService();
-    try {
-      await adminService.verifyProvider(provider.id, isVerified);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              isVerified
-                  ? 'Provider verified successfully!'
-                  : 'Provider verification removed',
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.pop(context, true); // Return true to indicate refresh needed
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(

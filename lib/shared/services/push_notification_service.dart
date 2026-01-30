@@ -5,7 +5,6 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/utils/logger.dart';
 import '../../core/services/deep_link_handler.dart';
-import 'notification_service.dart';
 
 /// Background message handler (must be a top-level function)
 @pragma('vm:entry-point')
