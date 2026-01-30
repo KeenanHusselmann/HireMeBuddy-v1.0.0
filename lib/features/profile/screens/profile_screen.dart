@@ -407,7 +407,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
       body: SafeArea(
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: _themeColorBase))
+            ? Center(child: CircularProgressIndicator(color: _themeColorBase))
             : _isProvider && !_hasProviderProfile
                 ? _buildRegistrationPrompt()
                 : SingleChildScrollView(
@@ -595,7 +595,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   onChanged: (isDark) {
                                     ref.read(themeModeProvider.notifier).toggleTheme();
                                   },
-                                  activeThumbcolor: _themeColorBase,
+                                  activeThumbColor: _themeColorBase,
                                 ),
                               ],
                             ),
@@ -768,7 +768,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         onPressed: _isSaving ? null : _saveProfile,
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          backgroundcolor: _themeColorBase,
+                          backgroundColor: _themeColorBase,
                           foregroundColor: Colors.white,
                         ),
                         child: _isSaving

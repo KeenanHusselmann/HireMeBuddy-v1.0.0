@@ -160,7 +160,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: _themeColorBase))
+          ? Center(child: CircularProgressIndicator(color: _themeColorBase))
           : _conversations.isEmpty
               ? Center(
                   child: Column(
