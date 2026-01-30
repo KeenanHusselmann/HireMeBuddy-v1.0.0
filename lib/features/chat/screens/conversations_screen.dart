@@ -130,6 +130,13 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Show loading screen until we know if user is provider (prevents color flash)
+    if (_isLoading && _myProfileId == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: _themeColor,
@@ -159,7 +166,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
             ),
         ],
       ),
-      body: _isLoading
+      body: _isLoading && _myProfileId != null
           ? Center(child: CircularProgressIndicator(color: _themeColorBase))
           : _conversations.isEmpty
               ? Center(

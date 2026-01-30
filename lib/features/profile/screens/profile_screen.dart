@@ -359,6 +359,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             return const Scaffold(body: SizedBox.shrink());
           }
           
+          // Show loading screen until we know if user is provider (prevents color flash)
+          if (_isLoading && _profile == null) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          
           return _buildProfileScreen(context);
         } catch (e) {
           debugPrint('Error rendering ProfileScreen: $e');
